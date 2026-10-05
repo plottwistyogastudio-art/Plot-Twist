@@ -27,11 +27,21 @@ export async function getUser(req: Request) {
   return error ? null : data.user;
 }
 
-// fetch() that sends the signed-in user's token
+// fetch() that sends the signed-in user's token.
+// If the server says 401/403 (for example the login expired while the page stayed open),
+// it refreshes the login once and tries again.
 export async function authFetch(url: string, init: RequestInit = {}) {
-  const { data } = await supabaseBrowser().auth.getSession();
-  const headers = new Headers(init.headers);
-  headers.set("content-type", "application/json");
-  if (data.session) headers.set("authorization", `Bearer ${data.session.access_token}`);
-  return fetch(url, { ...init, headers });
+  const run = async (refresh: boolean) => {
+    const sb = supabaseBrowser();
+    const { data } = refresh ? await sb.auth.refreshSession() : await sb.auth.getSession();
+    const headers = new Headers(init.headers);
+    if (!headers.has("content-type")) headers.set("content-type", "application/json");
+    if (data.session) headers.set("authorization", `Bearer ${data.session.access_token}`);
+    return fetch(url, { ...init, headers });
+  };
+  const first = await run(false);
+  if (first.status !== 401 && first.status !== 403) return first;
+  return run(true);
 }
+
+export const SESSION_EXPIRED = "Your login seems to have expired. Reload this page (or log out and back in), then try again.";

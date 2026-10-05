@@ -3,6 +3,7 @@ import { DM_Sans, Fraunces } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import HideOnAdmin from "@/components/HideOnAdmin";
+import WhatsAppButton from "@/components/WhatsAppButton";
 import { site } from "@/data/site";
 import "./globals.css";
 
@@ -51,6 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <HideOnAdmin><Header /></HideOnAdmin>
         <main>{children}</main>
         <HideOnAdmin><Footer /></HideOnAdmin>
+        <WhatsAppButton />
       </body>
     </html>
   );

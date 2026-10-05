@@ -655,3 +655,7 @@ select.admin-input { padding-right: 8px; }
 }
 .photo-field { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .photo-thumb { width: 64px; height: 80px; border-radius: 32px 32px 8px 8px; background-size: cover; background-position: center top; background-color: var(--sand); display: flex; align-items: center; justify-content: center; text-align: center; font-size: 11px; color: var(--muted); }
+
+/* Floating WhatsApp button */
+.wa-float { position: fixed; right: 20px; bottom: 20px; z-index: 40; width: 56px; height: 56px; border-radius: 50%; background: #25d366; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22); transition: transform 0.15s; }
+.wa-float:hover { transform: scale(1.06); }

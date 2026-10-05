@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { authFetch, supabaseBrowser } from "@/lib/supabase";
+import { authFetch, SESSION_EXPIRED } from "@/lib/supabase";
 import { CLASS_TYPES, type SiteConfig, type SlotRec } from "@/data/schedule";
 import type { TeacherRec } from "@/data/teachers";
 import { WEEKDAYS, WEEKDAYS_SHORT, formatFullDay, parseISO } from "@/lib/dates";
@@ -59,7 +59,7 @@ export default function ScheduleAdminView() {
       setSaved(JSON.stringify(j.config));
       setMsg({ ok: true, text: "Saved. The website is updated." });
     } else {
-      setMsg({ ok: false, text: j.error ?? "Could not save." });
+      setMsg({ ok: false, text: r.status === 401 || r.status === 403 ? SESSION_EXPIRED : j.error ?? "Could not save." });
       setConflicts(j.conflicts ?? []);
     }
   }
@@ -221,15 +221,10 @@ function PhotoField({ photo, onChange, onError }: { photo: string; onChange: (ur
     setBusy(true);
     try {
       const blob = await shrink(file);
-      const { data } = await supabaseBrowser().auth.getSession();
-      const r = await fetch("/api/admin/upload", {
-        method: "POST",
-        headers: { authorization: `Bearer ${data.session?.access_token ?? ""}`, "content-type": "image/jpeg" },
-        body: blob,
-      });
+      const r = await authFetch("/api/admin/upload", { method: "POST", headers: { "content-type": "image/jpeg" }, body: blob });
       const j = await r.json().catch(() => ({}));
       if (r.ok) onChange(j.url);
-      else onError(j.error ?? "Upload failed.");
+      else onError(r.status === 401 || r.status === 403 ? SESSION_EXPIRED : j.error ?? "Upload failed.");
     } catch {
       onError("Could not read that image. Try a JPG or PNG.");
     }
