@@ -7,6 +7,7 @@ import { findPackage, findClass, classStart } from "@/lib/booking-shared";
 import { buildIcs, downloadFile } from "@/lib/ics";
 import { formatFullDay, parseISO } from "@/lib/dates";
 import { formatIDR } from "@/data/packages";
+import { defaultConfig, type SiteConfig } from "@/data/schedule";
 
 type Booking = { id: string; class_key: string; status: "booked" | "waitlist"; mat: "studio" | "own" | null };
 type Pack = { id: string; package_id: string; remaining: number; total: number; expires_at: string | null };
@@ -20,13 +21,18 @@ type History = {
 const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 // A class counts as past two hours after it starts
 const isPast = (key: string) => classStart(key).getTime() + 2 * 3600_000 < Date.now();
-const className = (key: string) => findClass(key)?.session.name ?? "Class";
 
 export default function AccountView() {
   const [me, setMe] = useState<Me | null | undefined>(undefined);
   const [tab, setTab] = useState<"upcoming" | "history">("upcoming");
   const [hist, setHist] = useState<History | null>(null);
   const [msg, setMsg] = useState("");
+  // The live timetable (the admin can change class names and teachers)
+  const [cfg, setCfg] = useState<SiteConfig>(defaultConfig);
+  useEffect(() => {
+    fetch("/api/schedule").then((r) => (r.ok ? r.json() : null)).then((j) => j?.config && setCfg(j.config)).catch(() => {});
+  }, []);
+  const className = (key: string) => findClass(key, cfg)?.session.name ?? "Class";
 
   const load = useCallback(async () => {
     const { data } = await supabaseBrowser().auth.getSession();
@@ -130,8 +136,8 @@ export default function AccountView() {
                       <option value="own">My own mat</option>
                     </select>
                   </label>
-                  {b.status === "booked" && findClass(b.class_key) && (
-                    <button className="text-link forgot" onClick={() => downloadFile("plot-twist-class.ics", buildIcs(b.class_key, findClass(b.class_key)!.session), "text/calendar")}>Add to calendar</button>
+                  {b.status === "booked" && findClass(b.class_key, cfg) && (
+                    <button className="text-link forgot" onClick={() => downloadFile("plot-twist-class.ics", buildIcs(b.class_key, findClass(b.class_key, cfg)!.session), "text/calendar")}>Add to calendar</button>
                   )}
                 </div>
               </div>
@@ -140,7 +146,7 @@ export default function AccountView() {
         </>
       )}
 
-      {tab === "history" && <HistoryView hist={hist} />}
+      {tab === "history" && <HistoryView hist={hist} className={className} />}
 
       <details className="data-details">
         <summary>Account settings</summary>
@@ -159,7 +165,7 @@ export default function AccountView() {
 
 const packName = (id: string) => findPackage(id)?.name ?? (id === "manual" ? "Added by studio" : id);
 
-function HistoryView({ hist }: { hist: History | null }) {
+function HistoryView({ hist, className }: { hist: History | null; className: (key: string) => string }) {
   if (!hist) return <p className="muted">Loading…</p>;
   const now = Date.now();
   const packStatus = (p: Pack) =>

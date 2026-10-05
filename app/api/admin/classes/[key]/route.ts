@@ -7,7 +7,7 @@ import { CLASS_CAPACITY } from "@/data/schedule";
 export async function GET(req: Request, { params }: { params: Promise<{ key: string }> }) {
   if (!(await requireAdmin(req))) return forbidden();
   const key = decodeURIComponent((await params).key);
-  const cls = findClass(key);
+  const cls = await findClass(key);
   if (!cls) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const db = supabaseAdmin();
   const { data: bookings } = await db.from("bookings").select("*").eq("class_key", key).in("status", ["booked", "waitlist"]).order("created_at");

@@ -610,3 +610,48 @@ button { font-family: inherit; cursor: pointer; }
 .modal-choice:hover, .modal-choice:focus-visible { border-color: var(--pink-btn); }
 .modal-skip { align-self: center; background: none; border: 0; font-size: 14px; color: var(--muted); text-decoration: underline; }
 .mat-select { height: 36px; padding: 0 10px; border: 1.5px solid var(--line-strong); border-radius: 10px; background: #fdfbf4; font: inherit; font-size: 14px; color: var(--ink); }
+
+/* Admin: schedule + teachers editor */
+.seg.seg-3 { grid-template-columns: repeat(3, 1fr); }
+.save-bar { position: sticky; top: 0; z-index: 5; display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; background: var(--bg); padding: 10px 0; }
+.save-bar .seg { min-width: 340px; flex: 1; max-width: 520px; }
+.sched-days { display: flex; gap: 8px; flex-wrap: wrap; }
+.sched-days button { border: 1.5px solid var(--line-strong); background: transparent; border-radius: 999px; padding: 8px 16px; font: inherit; font-weight: 600; color: var(--ink); }
+.sched-days button span { color: var(--muted); font-weight: 400; margin-left: 4px; }
+.sched-days button.is-on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.sched-days button.is-on span { color: var(--cream-text); }
+.slot-row { display: grid; grid-template-columns: 110px minmax(150px, 1.4fr) 120px 96px minmax(110px, 1fr) minmax(140px, 1fr) auto; gap: 8px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.slot-dur { display: flex; align-items: center; gap: 6px; }
+.slot-dur .admin-input { width: 70px; }
+textarea.admin-input { height: auto; min-height: 84px; padding: 10px 12px; resize: vertical; }
+select.admin-input { padding-right: 8px; }
+.teacher-edit { display: flex; gap: 18px; justify-content: space-between; align-items: flex-start; padding: 14px 0; border-top: 1px solid var(--line); flex-wrap: wrap; }
+.teacher-edit-fields { flex: 1; min-width: 280px; display: flex; flex-direction: column; gap: 8px; }
+.teacher-edit-side { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+.text-link:disabled { opacity: 0.35; cursor: default; }
+@media (max-width: 900px) {
+  .slot-row { grid-template-columns: 1fr 1fr; }
+  .slot-row .slot-name { grid-column: 1 / -1; }
+  .save-bar .seg { min-width: 0; }
+}
+
+/* Teacher profile page */
+.teacher-link { color: inherit; text-decoration: none; display: block; }
+.teacher-photo.has-photo { background-size: cover; background-position: center top; }
+.teacher-bio-clamp { display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+.profile { display: grid; grid-template-columns: minmax(240px, 380px) 1fr; gap: 56px; margin-top: 32px; align-items: start; }
+.profile-photo { width: 100%; aspect-ratio: 4 / 5; font-size: 120px; }
+.profile-meta { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin: 4px 0 20px; }
+.profile-quote { font-family: var(--font-display), Georgia, serif; font-style: italic; font-size: 26px; line-height: 1.35; margin: 0 0 20px; color: var(--pink-deep); }
+.profile-h { margin: 36px 0 10px; }
+.profile-story { max-width: 62ch; margin: 0; }
+.profile-list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+.profile-cta { margin-top: 36px; }
+.teacher-edit-two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (max-width: 800px) {
+  .profile { grid-template-columns: 1fr; gap: 28px; }
+  .profile-photo { max-width: 320px; font-size: 96px; }
+  .teacher-edit-two { grid-template-columns: 1fr; }
+}
+.photo-field { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.photo-thumb { width: 64px; height: 80px; border-radius: 32px 32px 8px 8px; background-size: cover; background-position: center top; background-color: var(--sand); display: flex; align-items: center; justify-content: center; text-align: center; font-size: 11px; color: var(--muted); }

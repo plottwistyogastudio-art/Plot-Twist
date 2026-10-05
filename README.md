@@ -56,3 +56,6 @@ Flow: Book / Choose -> sign in or create account -> use a credit, or pick a pack
 - Today: classes of a day with mats and waitlist. Roster: check-in, cancel (credit always returns), add a person, move up from the waitlist, copy WhatsApp numbers. Members: search, credits, adjust credits with a reason, history. Orders: all payments, "Mark as paid" for pending ones.
 - Run the "Admin dashboard additions" block at the bottom of `supabase/schema.sql` once (adds `email`, `checked_in_at` and the `credit_adjustments` table).
 - TODO value: `MANUAL_PACK_DAYS` in `app/api/admin/members/[id]/credits/route.ts` (how long a manually added credit stays valid).
+
+## Editing the schedule and teachers
+Open /admin/schedule (admin accounts only). Weekly classes, teachers, closed days, one-off classes and cover teachers are saved in the `site_config` table (run the last block of supabase/schema.sql once). The sample data in data/schedule.ts and data/teachers.ts is only used until the first save.

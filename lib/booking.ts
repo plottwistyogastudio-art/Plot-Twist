@@ -2,8 +2,14 @@ import { OPENING_DATE, CLASS_CAPACITY } from "@/data/schedule";
 import { firstPlot, packages } from "@/data/packages";
 import { supabaseAdmin } from "@/lib/supabase";
 
-import { CANCEL_HOURS, findClass, classStart } from "@/lib/booking-shared";
-export { CANCEL_HOURS, findClass, classStart };
+import { CANCEL_HOURS, findClass as findClassIn, classStart } from "@/lib/booking-shared";
+import { getConfig } from "@/lib/config";
+export { CANCEL_HOURS, classStart };
+
+// Looks the class up in the live (admin-edited) schedule
+export async function findClass(key: string) {
+  return findClassIn(key, await getConfig());
+}
 const allPackages = [...packages, ...firstPlot];
 
 // Validity rules.
@@ -58,7 +64,7 @@ export async function spotsLeft(key: string) {
 
 export async function bookClass(userId: string, key: string): Promise<BookResult> {
   const db = supabaseAdmin();
-  const cls = findClass(key);
+  const cls = await findClass(key);
   if (!cls) return { status: "error", message: "This class does not exist." };
   if (cls.iso < OPENING_DATE) return { status: "error", message: "Bookings are not open for this date." };
   const start = classStart(key);

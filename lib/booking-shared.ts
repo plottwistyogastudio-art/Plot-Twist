@@ -5,13 +5,13 @@ export const findPackage = (id: string) => [...packages, ...firstPlot].find((p) 
 // Hours before class when cancelling still returns the credit (also used in lib/booking.ts)
 export const CANCEL_HOURS = 12;
 
-import { getClasses, type ClassSession } from "@/data/schedule";
+import { defaultConfig, getClasses, type ClassSession, type SiteConfig } from "@/data/schedule";
 import { parseISO } from "@/lib/dates";
 
-export function findClass(key: string): { iso: string; session: ClassSession } | null {
+export function findClass(key: string, cfg: SiteConfig = defaultConfig): { iso: string; session: ClassSession } | null {
   const [iso, time] = key.split("_");
   if (!iso || !time || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
-  const session = getClasses(parseISO(iso)).find((c) => c.time === time);
+  const session = getClasses(parseISO(iso), cfg).find((c) => c.time === time);
   return session ? { iso, session } : null;
 }
 

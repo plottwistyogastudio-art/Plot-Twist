@@ -5,14 +5,33 @@ import PackageCard from "@/components/PackageCard";
 import TeacherCard from "@/components/TeacherCard";
 import { classTypes } from "@/data/classTypes";
 import { firstPlot, firstPlotOpen, firstPlotWindow } from "@/data/packages";
-import { weekdayClasses } from "@/data/schedule";
+import { OPENING_DATE, getClasses } from "@/data/schedule";
 import { site } from "@/data/site";
-import { teachers } from "@/data/teachers";
+import { teacherCards } from "@/data/teachers";
+import { getConfig } from "@/lib/config";
+import { WEEKDAYS_SHORT, MONTHS_SHORT, addDays, parseISO, toISO } from "@/lib/dates";
 
-// Rebuilt at most once an hour, so First Plot disappears by itself after its end date
-export const revalidate = 3600;
+// Rendered on every visit: First Plot disappears by itself after its end date,
+// and schedule changes from the admin page show up right away
+export const dynamic = "force-dynamic";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const config = await getConfig();
+  const teachers = teacherCards(config.teachers);
+
+  // The next 4 classes (Jakarta time), never earlier than the opening day
+  const nowJ = new Date(Date.now() + 7 * 3600_000);
+  const todayISO = nowJ.toISOString().slice(0, 10);
+  const nowTime = nowJ.toISOString().slice(11, 16);
+  let day = parseISO(todayISO < OPENING_DATE ? OPENING_DATE : todayISO);
+  const upcoming: { iso: string; c: ReturnType<typeof getClasses>[number] }[] = [];
+  for (let i = 0; i < 21 && upcoming.length < 4; i++, day = addDays(day, 1)) {
+    const iso = toISO(day);
+    for (const c of getClasses(day, config)) {
+      if (iso === todayISO && c.time <= nowTime) continue;
+      if (upcoming.length < 4) upcoming.push({ iso, c });
+    }
+  }
   return (
     <>
       <section className="container hero">
@@ -61,16 +80,19 @@ export default function HomePage() {
           <Link href="/schedule" className="text-link">See full schedule</Link>
         </div>
         <div className="class-list">
-          {weekdayClasses.slice(0, 4).map((c) => (
-            <div className="class-row" key={c.time + c.name}>
-              <div className="class-time">{c.time}</div>
+          {upcoming.map(({ iso, c }) => (
+            <div className="class-row" key={iso + c.time}>
+              <div>
+                <div className="class-time">{c.time}</div>
+                <div className="muted small">{WEEKDAYS_SHORT[parseISO(iso).getUTCDay()]} {parseISO(iso).getUTCDate()} {MONTHS_SHORT[parseISO(iso).getUTCMonth()]}</div>
+              </div>
               <div>
                 <div className="class-name">{c.name}</div>
                 <div className="muted small">{c.duration}</div>
               </div>
               <div className="muted">{c.teacher}</div>
               <div><span className="pill">{c.level}</span></div>
-              <a href="/schedule" className="btn btn-dark btn-sm class-book">Book</a>
+              <a href={`/book?class=${encodeURIComponent(iso + "_" + c.time)}`} className="btn btn-dark btn-sm class-book">Book</a>
             </div>
           ))}
         </div>
@@ -118,7 +140,7 @@ export default function HomePage() {
           <Link href="/teachers" className="text-link">All teachers</Link>
         </div>
         <div className="grid grid-4">
-          {teachers.slice(0, 4).map((t) => <TeacherCard key={t.initial} teacher={t} />)}
+          {teachers.slice(0, 4).map((t) => <TeacherCard key={t.id} teacher={t} />)}
         </div>
       </section>
 

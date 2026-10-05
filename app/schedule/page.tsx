@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import ScheduleBoard from "@/components/ScheduleBoard";
+import { getConfig } from "@/lib/config";
 
 export const metadata: Metadata = { title: "Schedule", description: "See this week's yoga classes at Plot Twist in Lippo Karawaci and book your spot." };
 
-export default function SchedulePage() {
+// Always fresh, so changes made in the admin page show up right away
+export const dynamic = "force-dynamic";
+
+export default async function SchedulePage() {
+  const config = await getConfig();
   return (
     <section className="container page">
       <div className="eyebrow">Schedule</div>
@@ -16,7 +21,7 @@ export default function SchedulePage() {
         <Link href="/class-guide" className="text-link">class guide</Link>.
       </p>
 
-      <ScheduleBoard />
+      <ScheduleBoard config={config} />
 
       <div className="note-band">
         <div>

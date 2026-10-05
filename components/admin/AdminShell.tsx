@@ -7,6 +7,7 @@ import { authFetch, supabaseBrowser } from "@/lib/supabase";
 
 const items = [
   { href: "/admin", label: "Today" },
+  { href: "/admin/schedule", label: "Schedule" },
   { href: "/admin/members", label: "Members" },
   { href: "/admin/orders", label: "Orders" },
 ];

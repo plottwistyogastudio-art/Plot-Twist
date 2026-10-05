@@ -76,3 +76,12 @@ alter table orders add constraint orders_user_id_fkey foreign key (user_id) refe
 
 -- ---- Mat choice (studio mat or own mat) ----
 alter table bookings add column if not exists mat text check (mat in ('studio','own'));
+
+-- ---- Editable schedule + teachers (Admin → Schedule) ----
+create table if not exists site_config (
+  key text primary key,
+  value jsonb not null,
+  updated_at timestamptz not null default now(),
+  updated_by text
+);
+alter table site_config enable row level security;

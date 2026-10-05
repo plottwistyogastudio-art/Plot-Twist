@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { getClasses, CLASS_CAPACITY, OPENING_DATE } from "@/data/schedule";
 import { parseISO, startOfWeek, toISO, addDays } from "@/lib/dates";
 import { classKey } from "@/lib/booking";
+import { getConfig } from "@/lib/config";
 
 export async function GET(req: Request) {
   if (!(await requireAdmin(req))) return forbidden();
@@ -11,7 +12,7 @@ export async function GET(req: Request) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return NextResponse.json({ error: "Bad date" }, { status: 400 });
   const db = supabaseAdmin();
 
-  const list = date < OPENING_DATE ? [] : getClasses(parseISO(date));
+  const list = date < OPENING_DATE ? [] : getClasses(parseISO(date), await getConfig());
   const keys = list.map((c) => classKey(date, c.time));
   const { data: rows } = keys.length
     ? await db.from("bookings").select("class_key,status").in("class_key", keys).in("status", ["booked", "waitlist"])

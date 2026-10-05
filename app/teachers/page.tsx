@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
 import CtaBand from "@/components/CtaBand";
 import TeacherCard from "@/components/TeacherCard";
-import { teachers } from "@/data/teachers";
+import { teacherCards } from "@/data/teachers";
+import { getConfig } from "@/lib/config";
 
 export const metadata: Metadata = { title: "Teachers", description: "Meet the teachers at Plot Twist Studio." };
 
-export default function TeachersPage() {
+export const dynamic = "force-dynamic";
+
+export default async function TeachersPage() {
+  const teachers = teacherCards((await getConfig()).teachers);
   return (
     <>
       <section className="container page">
@@ -18,7 +22,7 @@ export default function TeachersPage() {
         </p>
         <div className="grid grid-4 teachers-grid">
           {teachers.map((t) => (
-            <TeacherCard key={t.initial} teacher={t} full />
+            <TeacherCard key={t.id} teacher={t} full />
           ))}
         </div>
       </section>

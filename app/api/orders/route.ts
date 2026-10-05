@@ -10,7 +10,7 @@ export async function POST(req: Request) {
 
   const pkg = findPackage(String(packageId));
   if (!pkg) return NextResponse.json({ error: "Unknown package." }, { status: 400 });
-  if (classKey && !findClass(String(classKey))) return NextResponse.json({ error: "Unknown class." }, { status: 400 });
+  if (classKey && !(await findClass(String(classKey)))) return NextResponse.json({ error: "Unknown class." }, { status: 400 });
   if (pkg.oncePerPerson && !firstPlotOpen())
     return NextResponse.json({ error: "First Plot has ended." }, { status: 409 });
   if (pkg.oncePerPerson && (await hasUsedFirstPlot(user.id)))

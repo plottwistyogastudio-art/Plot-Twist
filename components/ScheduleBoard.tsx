@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { OPENING_DATE, WEEKS_AHEAD, getClasses, typeFilters } from "@/data/schedule";
+import { OPENING_DATE, WEEKS_AHEAD, getClasses, typeFilters, type SiteConfig } from "@/data/schedule";
 import {
   WEEKDAYS_SHORT,
   MONTHS_SHORT,
@@ -17,7 +17,7 @@ import {
 const opening = parseISO(OPENING_DATE);
 const firstWeek = startOfWeek(opening); // Monday of the opening week
 
-export default function ScheduleBoard() {
+export default function ScheduleBoard({ config }: { config: SiteConfig }) {
   const [week, setWeek] = useState(0); // 0 = opening week
   const [selected, setSelected] = useState<string>(OPENING_DATE);
   const [type, setType] = useState<(typeof typeFilters)[number]>("All");
@@ -49,7 +49,7 @@ export default function ScheduleBoard() {
   const beforeOpening = selectedDate < opening;
   const list = beforeOpening
     ? []
-    : getClasses(selectedDate).filter((c) => type === "All" || c.type === type);
+    : getClasses(selectedDate, config).filter((c) => type === "All" || c.type === type);
 
   return (
     <div>
