@@ -5,7 +5,7 @@ export type Pkg = {
   classes: number;
   price: number; // in IDR
   desc: string;
-  validity: string; // TODO: confirm the real validity period
+  validity: string;
   featured?: boolean;
   regularPrice?: number; // shown struck through, for deals
   oncePerPerson?: boolean; // deal can only be bought once
@@ -20,7 +20,7 @@ export const packages: Pkg[] = [
     classes: 1,
     price: 120000,
     desc: "A single class, whenever you feel like it.",
-    validity: "[validity period]",
+    validity: "7 days from purchase",
   },
   {
     id: "pack-5",
@@ -29,7 +29,7 @@ export const packages: Pkg[] = [
     classes: 5,
     price: 560000,
     desc: "Five classes to use at your own pace.",
-    validity: "[validity period]",
+    validity: "5 weeks from your first booking",
   },
   {
     id: "pack-10",
@@ -38,14 +38,17 @@ export const packages: Pkg[] = [
     classes: 10,
     price: 1040000,
     desc: "Ten classes for a steady weekly practice.",
-    validity: "[validity period]",
+    validity: "10 weeks from your first booking",
     featured: true,
   },
 ];
 
 // Opening deal: new members only, one per person.
 // IDR 98.000 per class (3) and IDR 93.000 per class (5).
-export const firstPlotWindow = "15 October – 14 November 2026";
+export const firstPlotWindow = "Until 7 November 2026";
+// First Plot cannot be bought after this moment (end of 7 Nov 2026, Jakarta time)
+export const FIRST_PLOT_ENDS_AT = "2026-11-07T23:59:59+07:00";
+export const firstPlotOpen = () => Date.now() <= new Date(FIRST_PLOT_ENDS_AT).getTime();
 
 export const firstPlot: Pkg[] = [
   {
@@ -56,7 +59,7 @@ export const firstPlot: Pkg[] = [
     price: 294000,
     regularPrice: 360000, // 3 x drop-in
     desc: "Three classes to start your story.",
-    validity: "3 weeks",
+    validity: "3 weeks from your first booking",
     oncePerPerson: true,
   },
   {
@@ -67,7 +70,7 @@ export const firstPlot: Pkg[] = [
     price: 465000,
     regularPrice: 560000, // regular 5 Class Pack
     desc: "Five classes to settle into your practice.",
-    validity: "5 weeks",
+    validity: "5 weeks from your first booking",
     oncePerPerson: true,
   },
 ];

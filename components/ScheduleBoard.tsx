@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { site } from "@/data/site";
 import { OPENING_DATE, WEEKS_AHEAD, getClasses, typeFilters } from "@/data/schedule";
 import {
   WEEKDAYS_SHORT,
   MONTHS_SHORT,
   addDays,
-  formatDay,
   formatFullDay,
   formatRange,
   parseISO,
@@ -95,7 +93,6 @@ export default function ScheduleBoard() {
               className={`chip chip-day ${on ? "is-on" : ""}`}
               aria-pressed={on}
               disabled={closed}
-              title={closed ? `We open on ${formatDay(opening)}` : undefined}
               onClick={() => setSelected(iso)}
             >
               <span className="chip-dow">{WEEKDAYS_SHORT[d.getUTCDay()]}</span>
@@ -140,7 +137,7 @@ export default function ScheduleBoard() {
             <div>
               <span className="pill">{c.level}</span>
             </div>
-            <a href={site.bookingUrl} className="btn btn-primary btn-sm class-book">
+            <a href={`/book?class=${encodeURIComponent(selected + "_" + c.time)}`} className="btn btn-primary btn-sm class-book">
               Book
             </a>
           </div>
@@ -148,7 +145,7 @@ export default function ScheduleBoard() {
         {list.length === 0 && (
           <div className="empty">
             {beforeOpening
-              ? `We open on ${formatDay(opening)}.`
+              ? "No classes on this day."
               : "No classes match this filter on this day. Try another day or class type."}
           </div>
         )}

@@ -44,6 +44,7 @@ export const extraClasses: Record<string, ClassSession[]> = {
 
 // ---- Opening + how far ahead visitors can browse ----
 export const OPENING_DATE = "2026-10-15"; // no classes before this day
+export const CLASS_CAPACITY = 12; // TODO: mats per class
 export const WEEKS_AHEAD = 8; // weeks shown from the opening week
 
 export function getClasses(date: Date): ClassSession[] {

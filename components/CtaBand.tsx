@@ -1,11 +1,10 @@
 import Link from "next/link";
-import { site } from "@/data/site";
 
 export default function CtaBand({
   title = "Ready for your first twist?",
   text = "Pick a class, book your spot and arrive ten minutes early. We'll take care of the rest.",
   button = "Book a class",
-  href = site.bookingUrl,
+  href = "/schedule",
 }: {
   title?: string;
   text?: string;

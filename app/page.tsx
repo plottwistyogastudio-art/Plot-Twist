@@ -4,17 +4,19 @@ import CtaBand from "@/components/CtaBand";
 import PackageCard from "@/components/PackageCard";
 import TeacherCard from "@/components/TeacherCard";
 import { classTypes } from "@/data/classTypes";
-import { firstPlot, firstPlotWindow } from "@/data/packages";
+import { firstPlot, firstPlotOpen, firstPlotWindow } from "@/data/packages";
 import { weekdayClasses } from "@/data/schedule";
 import { site } from "@/data/site";
 import { teachers } from "@/data/teachers";
+
+// Rebuilt at most once an hour, so First Plot disappears by itself after its end date
+export const revalidate = 3600;
 
 export default function HomePage() {
   return (
     <>
       <section className="container hero">
         <div className="hero-copy">
-          <div className="badge">Grand opening · {site.openingDate}</div>
           <h1 className="h1">
             Come for the stretch.
             <br />
@@ -22,7 +24,7 @@ export default function HomePage() {
           </h1>
           <p className="lead">{site.description}</p>
           <div className="btn-row">
-            <a href={site.bookingUrl} className="btn btn-primary">Book a class</a>
+            <a href="/schedule" className="btn btn-primary">Book a class</a>
             <Link href="/schedule" className="btn btn-outline">View schedule</Link>
           </div>
         </div>
@@ -68,12 +70,13 @@ export default function HomePage() {
               </div>
               <div className="muted">{c.teacher}</div>
               <div><span className="pill">{c.level}</span></div>
-              <a href={site.bookingUrl} className="btn btn-dark btn-sm class-book">Book</a>
+              <a href="/schedule" className="btn btn-dark btn-sm class-book">Book</a>
             </div>
           ))}
         </div>
       </section>
 
+      {firstPlotOpen() && (
       <section className="band band-blush">
         <div className="container">
           <div className="center section-head-center">
@@ -91,6 +94,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      )}
 
       <section className="container section">
         <div className="section-head">

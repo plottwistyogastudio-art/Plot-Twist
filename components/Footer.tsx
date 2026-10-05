@@ -20,6 +20,8 @@ export default function Footer() {
           <a href={site.instagramUrl}>Instagram</a>
           <a href={site.whatsappUrl}>WhatsApp</a>
           <a href={site.emailUrl}>Email</a>
+          <Link href="/terms">Terms of Use</Link>
+          <Link href="/privacy">Privacy Policy</Link>
         </div>
         <div className="footer-text">
           {site.addressLines.map((l) => (

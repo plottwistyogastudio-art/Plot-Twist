@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import CtaBand from "@/components/CtaBand";
 import { classTypes } from "@/data/classTypes";
 
-export const metadata: Metadata = { title: "Class Guide" };
+export const metadata: Metadata = { title: "Class Guide", description: "Which yoga class is for you? A guide to every class at Plot Twist Studio." };
 
 const steps = [
   { n: "1", title: "Pick a class", desc: "Browse the schedule and choose a class that fits your level and mood." },

@@ -2,13 +2,45 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { nav, site } from "@/data/site";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { nav } from "@/data/site";
+import { supabaseBrowser } from "@/lib/supabase";
 
 export default function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  // null = still checking, so the buttons do not flash
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const sb = supabaseBrowser();
+    sb.auth.getSession().then(({ data }) => setSignedIn(!!data.session));
+    const { data: sub } = sb.auth.onAuthStateChange((_e, session) => setSignedIn(!!session));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  async function logout() {
+    setOpen(false);
+    await supabaseBrowser().auth.signOut();
+    router.push("/");
+  }
+
+  const link = (href: string, label: string) => {
+    const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+    return (
+      <Link
+        key={href}
+        href={href}
+        className={active ? "nav-link is-active" : "nav-link"}
+        aria-current={active ? "page" : undefined}
+        onClick={() => setOpen(false)}
+      >
+        {label}
+      </Link>
+    );
+  };
 
   return (
     <header className="site-header">
@@ -18,21 +50,20 @@ export default function Header() {
         </Link>
 
         <nav className={`nav ${open ? "is-open" : ""}`} aria-label="Main">
-          {nav.map((item) => {
-            const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={active ? "nav-link is-active" : "nav-link"}
-                aria-current={active ? "page" : undefined}
-                onClick={() => setOpen(false)}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-          <a href={site.bookingUrl} className="btn btn-primary nav-book">
+          {nav.map((item) => link(item.href, item.label))}
+          {signedIn === true && (
+            <>
+              {link("/account", "My bookings")}
+              <button type="button" className="nav-link nav-plain" onClick={logout}>Log out</button>
+            </>
+          )}
+          {signedIn === false && (
+            <>
+              <Link href="/login" className="nav-link" onClick={() => setOpen(false)}>Log in</Link>
+              <Link href="/login?mode=signup" className="nav-link" onClick={() => setOpen(false)}>Sign up</Link>
+            </>
+          )}
+          <a href="/schedule" className="btn btn-primary nav-book">
             Book now
           </a>
         </nav>

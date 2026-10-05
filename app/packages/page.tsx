@@ -1,17 +1,20 @@
 import type { Metadata } from "next";
 import PackageCard from "@/components/PackageCard";
-import { firstPlot, firstPlotWindow, packages } from "@/data/packages";
+import { firstPlot, firstPlotOpen, firstPlotWindow, packages } from "@/data/packages";
 import { site } from "@/data/site";
 
-export const metadata: Metadata = { title: "Packages" };
+export const metadata: Metadata = { title: "Packages", description: "Drop-in, 5-class and 10-class yoga packages at Plot Twist Studio, Lippo Karawaci." };
 
 const faqs = [
   { q: "What is First Plot?", a: "Our opening deal for new members: a 3-class or 5-class package at a special price. You can buy one First Plot package per person, and only during the opening window." },
   { q: "How do I book a class?", a: "Choose a class on the schedule and tap Book. You will need an active package or a drop-in purchase to reserve your spot." },
-  { q: "Can I cancel or reschedule?", a: "Yes. Cancel up to [cancellation window] before class to keep your credit. Late cancellations and no-shows may use a class." },
-  { q: "Do packages expire?", a: "Each package is valid for a set period from your first booking. The validity is shown on every package." },
+  { q: "Can I cancel or reschedule?", a: "Yes. Cancel up to 12 hours before class to keep your credit. Late cancellations and no-shows may use a class." },
+  { q: "Do packages expire?", a: "Drop-in is valid for 7 days from purchase. The 5-class pack is valid for 5 weeks and the 10-class pack for 10 weeks, counted from your first booking. First Plot is valid for 3 or 5 weeks, also counted from your first booking." },
   { q: "Can I share a package?", a: "Packages are personal and cannot be shared, but you are welcome to bring a friend with a drop-in." },
 ];
+
+// Rebuilt at most once an hour, so First Plot disappears by itself after its end date
+export const revalidate = 3600;
 
 export default function PackagesPage() {
   return (
@@ -22,9 +25,11 @@ export default function PackagesPage() {
           Find your <em>rhythm</em>
         </h1>
         <p className="lead">
-          Start with our opening deal, or choose a regular package. Every package works for any class on the schedule.
+          {firstPlotOpen() ? "Start with our opening deal, or choose a regular package. " : "Choose the package that fits your rhythm. "}
+          Every package works for any class on the schedule.
         </p>
 
+        {firstPlotOpen() && (
         <div className="deal">
           <div className="eyebrow">Opening deal · {firstPlotWindow}</div>
           <h2 className="h2 deal-title">First Plot</h2>
@@ -37,6 +42,7 @@ export default function PackagesPage() {
             ))}
           </div>
         </div>
+        )}
 
         <h2 className="h3 regular-title">Regular packages</h2>
         <div className="grid grid-3">
@@ -62,7 +68,7 @@ export default function PackagesPage() {
           <p className="muted faq-intro">Questions about booking, cancelling or using your package.</p>
         </div>
         <div className="faq">
-          {faqs.map((f, i) => (
+          {faqs.filter((f) => firstPlotOpen() || f.q !== "What is First Plot?").map((f, i) => (
             <details key={f.q} open={i === 0}>
               <summary>
                 <span>{f.q}</span>

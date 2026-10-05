@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import ScheduleBoard from "@/components/ScheduleBoard";
 
-export const metadata: Metadata = { title: "Schedule" };
+export const metadata: Metadata = { title: "Schedule", description: "See this week's yoga classes at Plot Twist in Lippo Karawaci and book your spot." };
 
 export default function SchedulePage() {
   return (

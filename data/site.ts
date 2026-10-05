@@ -4,9 +4,8 @@ export const site = {
   shortName: "Plot Twist",
   description:
     "A boutique yoga studio in Lippo Karawaci. Warm, playful and made for every level.",
-  openingDate: "15 October 2026",
   // TODO: replace with the real address and hours
-  addressLines: ["2nd floor, [street address]", "Lippo Karawaci"],
+  addressLines: ["3rd floor, The Hive Essence no 25", "Lippo Karawaci"],
   hours: "[Opening hours]",
   instagramHandle: "@plottwiststudio.id",
   instagramUrl: "https://instagram.com/plottwiststudio.id",

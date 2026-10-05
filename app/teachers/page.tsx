@@ -3,7 +3,7 @@ import CtaBand from "@/components/CtaBand";
 import TeacherCard from "@/components/TeacherCard";
 import { teachers } from "@/data/teachers";
 
-export const metadata: Metadata = { title: "Teachers" };
+export const metadata: Metadata = { title: "Teachers", description: "Meet the teachers at Plot Twist Studio." };
 
 export default function TeachersPage() {
   return (
