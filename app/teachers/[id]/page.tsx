@@ -64,7 +64,7 @@ export default async function TeacherPage({ params }: { params: Promise<{ id: st
               </>
             )}
 
-            <Link href="/schedule" className="btn btn-primary profile-cta">See the schedule</Link>
+            <Link href={`/schedule?teacher=${t.id}`} className="btn btn-primary profile-cta">See {first}’s classes</Link>
           </div>
         </div>
       </section>
