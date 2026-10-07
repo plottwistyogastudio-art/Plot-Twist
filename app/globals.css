@@ -239,7 +239,7 @@ button { font-family: inherit; cursor: pointer; }
 .teacher-name { font-family: var(--font-body), sans-serif; font-size: 18px; font-weight: 600; margin-top: 14px; line-height: 1.4; }
 .teacher-styles { color: var(--pink-deep); font-size: 14px; font-weight: 600; }
 .teacher-bio { font-size: 15px; margin: 8px 0 10px; }
-.teachers-grid { margin-top: 56px; gap: 40px 24px; }
+.teachers-grid { margin-top: 56px; gap: 48px 32px; }
 
 /* ---------- Class guide ---------- */
 .guide-grid { margin-top: 48px; gap: 20px; }
@@ -408,6 +408,7 @@ button { font-family: inherit; cursor: pointer; }
   .info-grid { grid-template-columns: 1fr; gap: 20px; padding-top: 28px; padding-bottom: 28px; }
   .section-head { flex-direction: column; align-items: flex-start; gap: 12px; margin-bottom: 24px; }
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  .teachers-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 16px; }
   .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
   .band { padding: 56px 0; }
   .teacher-photo { font-size: 44px; border-radius: 100px 100px 16px 16px; }

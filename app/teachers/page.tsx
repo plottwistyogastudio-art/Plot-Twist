@@ -20,7 +20,7 @@ export default async function TeachersPage() {
         <p className="lead">
           Our teachers bring warmth, clear guidance and a little fun to every class. Find the style and voice that suits you.
         </p>
-        <div className="grid grid-4 teachers-grid">
+        <div className="grid grid-3 teachers-grid">
           {teachers.map((t) => (
             <TeacherCard key={t.id} teacher={t} full />
           ))}
