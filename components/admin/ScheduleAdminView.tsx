@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { authFetch, SESSION_EXPIRED } from "@/lib/supabase";
+import { applyLaunchTimetable } from "@/data/timetable";
 import { CLASS_TYPES, type SiteConfig, type SlotRec } from "@/data/schedule";
 import type { TeacherRec } from "@/data/teachers";
 import { WEEKDAYS, WEEKDAYS_SHORT, formatFullDay, parseISO } from "@/lib/dates";
 
+const LEVELS = ["Beginner", "All levels", "Intermediate"];
 const ORDER = [1, 2, 3, 4, 5, 6, 0]; // Monday first
 const blankSlot = (): SlotRec => ({ time: "09:00", name: "New class", type: "Vinyasa", duration: "60 min", level: "All levels", teacherId: "" });
 type Conflict = { key: string; label: string; count: number };
@@ -100,6 +102,17 @@ export default function ScheduleAdminView() {
 
       {tab === "week" && (
         <div className="admin-panel">
+          <div className="admin-between admin-gap">
+            <p className="small muted">First time? Load the full launch timetable in one click, then adjust anything below.</p>
+            <button
+              className="btn btn-outline btn-sm"
+              onClick={() => {
+                if (!window.confirm("This replaces the whole weekly timetable with the launch timetable (teachers, special dates and covers are kept). Continue?")) return;
+                setCfg((c) => (c ? applyLaunchTimetable(c) : c));
+                setMsg({ ok: true, text: "Launch timetable loaded. Check it, then press Save changes." });
+              }}
+            >Load launch timetable</button>
+          </div>
           <div className="sched-days">
             {ORDER.map((d) => (
               <button key={d} className={d === day ? "is-on" : ""} onClick={() => setDay(d)}>
@@ -256,7 +269,10 @@ function SlotRow({ slot, teachers, onChange, onRemove }: {
         <input type="number" min={15} max={240} step={5} className="admin-input" value={parseInt(slot.duration, 10) || ""} aria-label="Minutes" onChange={(e) => onChange({ duration: `${e.target.value} min` })} />
         <span className="muted small">min</span>
       </label>
-      <input className="admin-input" value={slot.level} placeholder="Level" aria-label="Level" onChange={(e) => onChange({ level: e.target.value })} />
+      <select className="admin-input" value={slot.level} aria-label="Level" onChange={(e) => onChange({ level: e.target.value })}>
+        {!LEVELS.includes(slot.level) && <option value={slot.level}>{slot.level || "Level"}</option>}
+        {LEVELS.map((l) => <option key={l}>{l}</option>)}
+      </select>
       <select className="admin-input" value={slot.teacherId} aria-label="Teacher" onChange={(e) => onChange({ teacherId: e.target.value })}>
         <option value="">Teacher TBA</option>
         {teachers.map((t) => <option key={t.id} value={t.id}>{t.name || "(no name)"}</option>)}

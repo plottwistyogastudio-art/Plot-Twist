@@ -12,5 +12,7 @@ export const classTypes: ClassType[] = [
   { name: "Slow Flow", desc: "A gentler pace with time to settle into each shape and focus on your breath.", level: "Beginner friendly", intensity: "Light to medium", goodFor: "easing in, or a mindful midweek reset" },
   { name: "Hatha Foundations", desc: "Classic poses held with clear alignment cues. A great base for the rest of your practice.", level: "Beginner", intensity: "Light", goodFor: "first-timers and anyone who loves clear instruction" },
   { name: "Yin & Restore", desc: "Long, quiet holds that release deep tension. Props and a calm room do most of the work.", level: "All levels", intensity: "Gentle", goodFor: "unwinding after a long day or a hard workout" },
+  { name: "Prenatal Yoga", desc: "Gentle, supportive movement and breathing for pregnancy, taught by a certified prenatal yoga teacher.", level: "All levels", intensity: "Gentle", goodFor: "staying comfortable and connected during pregnancy (please check with your doctor or midwife first)" },
+  { name: "Mat Pilates", desc: "Controlled, core-focused movement on the mat, with an emphasis on alignment and body awareness.", level: "All levels", intensity: "Light to medium", goodFor: "building core strength and body awareness" },
   { name: "Private Session", desc: "One-on-one time with a teacher, shaped around your body, goals and schedule.", level: "All levels", intensity: "Your pace", goodFor: "personal guidance and going deeper" },
 ];

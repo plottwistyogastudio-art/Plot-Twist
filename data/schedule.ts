@@ -1,7 +1,8 @@
 import { toISO } from "@/lib/dates";
 import { defaultTeachers, type TeacherRec } from "@/data/teachers";
+import { applyLaunchTimetable } from "@/data/timetable";
 
-export const CLASS_TYPES = ["Vinyasa", "Slow Flow", "Hatha", "Yin"] as const;
+export const CLASS_TYPES = ["Vinyasa", "Slow Flow", "Hatha", "Yin", "Prenatal", "Mat Pilates"] as const;
 export type ClassTypeName = (typeof CLASS_TYPES)[number];
 
 // One class as shown on the website (teacher name already filled in)
@@ -33,30 +34,14 @@ export type SiteConfig = {
   substitutes: Record<string, string>;     // "YYYY-MM-DD_HH:MM" -> teacher id (cover for one class)
 };
 
-const s = (time: string, name: string, type: ClassTypeName, duration: string, level: string): SlotRec =>
-  ({ time, name, type, duration, level, teacherId: "" });
-
-const weekday = (): SlotRec[] => [
-  s("07:00", "Vinyasa Flow", "Vinyasa", "60 min", "All levels"),
-  s("09:30", "Slow Flow", "Slow Flow", "60 min", "Beginner friendly"),
-  s("12:00", "Hatha Foundations", "Hatha", "60 min", "Beginner"),
-  s("17:30", "Power Vinyasa", "Vinyasa", "60 min", "Intermediate"),
-  s("19:00", "Yin & Restore", "Yin", "75 min", "All levels"),
-];
-const weekend = (): SlotRec[] => [
-  s("09:00", "Vinyasa Flow", "Vinyasa", "60 min", "All levels"),
-  s("10:30", "Slow Flow", "Slow Flow", "60 min", "Beginner friendly"),
-  s("17:00", "Yin & Restore", "Yin", "75 min", "All levels"),
-];
-
 // Used until a schedule is saved in the admin page (or if the database is unreachable).
-export const defaultConfig: SiteConfig = {
+export const defaultConfig: SiteConfig = applyLaunchTimetable({
   teachers: defaultTeachers,
-  week: [weekend(), weekday(), weekday(), weekday(), weekday(), weekday(), weekend()],
+  week: [[], [], [], [], [], [], []],
   closedDates: [],
   extraClasses: {},
   substitutes: {},
-};
+});
 
 // ---- Opening + how far ahead visitors can browse ----
 export const OPENING_DATE = "2026-10-15"; // no classes before this day
