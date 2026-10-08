@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import ScheduleBoard from "@/components/ScheduleBoard";
 import { getConfig } from "@/lib/config";
+import { teacherCards } from "@/data/teachers";
 import { OPENING_DATE, WEEKS_AHEAD, getClasses } from "@/data/schedule";
 import { addDays, formatFullDay, parseISO, startOfWeek, toISO, today } from "@/lib/dates";
 
@@ -13,7 +14,9 @@ export const dynamic = "force-dynamic";
 export default async function SchedulePage({ searchParams }: { searchParams: Promise<{ teacher?: string }> }) {
   const config = await getConfig();
   const { teacher: teacherId } = await searchParams;
-  const teacher = teacherId ? config.teachers.find((x) => x.id === teacherId) : undefined;
+  const cards = teacherCards(config.teachers);
+  const card = teacherId ? cards.find((x) => x.slug === teacherId.toLowerCase() || x.id === teacherId) : undefined;
+  const teacher = card;
 
   if (teacher) {
     const opening = parseISO(OPENING_DATE);
@@ -35,7 +38,7 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
         </h1>
         <p className="lead">
           Every upcoming class taught by {teacher.name}.{" "}
-          <Link href={`/teachers/${teacher.id}`} className="text-link">Back to profile</Link>
+          <Link href={`/teachers/${teacher.slug}`} className="text-link">Back to profile</Link>
           {" · "}
           <Link href="/schedule" className="text-link">Full schedule</Link>
         </p>

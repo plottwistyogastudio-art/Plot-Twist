@@ -42,7 +42,7 @@ Flow: Book / Choose -> sign in or create account -> use a credit, or pick a pack
 5. `npm install` (installs `@supabase/supabase-js`) then `npm run dev`.
 
 ### Payments
-`NEXT_PUBLIC_PAYMENT_MODE=simulate` shows a fake QR and a "Simulate payment" button for testing. For real QRIS connect a gateway (Midtrans / Xendit): create the QR in `app/api/orders/route.ts` and finish the order in `app/api/payments/webhook/route.ts` (see comments). Set the mode to `live` to disable the simulate button.
+`NEXT_PUBLIC_PAYMENT_MODE=simulate` shows a fake QR and a "Simulate payment" button for testing. Real QRIS runs on DOKU Checkout: set `DOKU_CLIENT_ID`, `DOKU_SECRET_KEY` and `DOKU_ENV` (sandbox/production) in Vercel, and set the DOKU Notification URL to `https://<your-domain>/api/payments/webhook`. The code is in `lib/doku.ts`, `app/api/orders/route.ts` and `app/api/payments/webhook/route.ts`. Set the mode to `live` to disable the simulate button.
 
 ### TODO values
 - `data/schedule.ts`: `CLASS_CAPACITY` = 12 mats per class.

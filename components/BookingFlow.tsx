@@ -20,6 +20,7 @@ export default function BookingFlow({ classKey, packageId }: { classKey?: string
   const [cls, setCls] = useState<ClassInfo | null>(null);
   const [chosen, setChosen] = useState<string | null>(packageId ?? null);
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [payUrl, setPayUrl] = useState<string | null>(null);
   const [done, setDone] = useState<Done | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -83,6 +84,7 @@ export default function BookingFlow({ classKey, packageId }: { classKey?: string
     const j = await r.json();
     setBusy(false);
     if (!r.ok) { setError(j.error ?? "Could not start the payment."); return; }
+    setPayUrl(j.payUrl ?? null);
     setOrderId(j.order.id);
   }
 
@@ -184,8 +186,17 @@ export default function BookingFlow({ classKey, packageId }: { classKey?: string
         </div>
         <div className="flow-card center-col">
           <div className="strong">Pay with QRIS</div>
-          <div className="qr-box" role="img" aria-label="QR code placeholder" />
-          <div className="muted small center">Scan with any banking or e-wallet app. We confirm automatically once it is paid.</div>
+          {payUrl ? (
+            <>
+              <a href={payUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-block">Open QRIS payment</a>
+              <div className="muted small center">A secure payment page opens in a new tab. Scan the QR with any banking or e-wallet app, then come back here. We confirm automatically once it is paid.</div>
+            </>
+          ) : (
+            <>
+              <div className="qr-box" role="img" aria-label="QR code placeholder" />
+              <div className="muted small center">Scan with any banking or e-wallet app. We confirm automatically once it is paid.</div>
+            </>
+          )}
         </div>
         <div className="flow-total"><span className="strong">Total</span><span className="price-sm">{formatIDR(pkg.price)}</span></div>
         {SIMULATE && (

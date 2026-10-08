@@ -8,7 +8,7 @@ import { getConfig } from "@/lib/config";
 export const dynamic = "force-dynamic";
 
 async function find(id: string) {
-  return teacherCards((await getConfig()).teachers).find((t) => t.id === id);
+  return teacherCards((await getConfig()).teachers).find((t) => t.slug === id.toLowerCase() || t.id === id);
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
@@ -64,7 +64,7 @@ export default async function TeacherPage({ params }: { params: Promise<{ id: st
               </>
             )}
 
-            <Link href={`/schedule?teacher=${t.id}`} className="btn btn-primary profile-cta">See {first}’s classes</Link>
+            <Link href={`/schedule?teacher=${t.slug}`} className="btn btn-primary profile-cta">See {first}’s classes</Link>
           </div>
         </div>
       </section>

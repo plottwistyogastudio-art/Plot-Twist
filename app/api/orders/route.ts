@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getUser, supabaseAdmin } from "@/lib/supabase";
 import { findClass, findPackage, hasUsedFirstPlot } from "@/lib/booking";
 import { firstPlotOpen } from "@/data/packages";
+import { createCheckout, dokuEnabled, invoiceFor } from "@/lib/doku";
 
 export async function POST(req: Request) {
   const user = await getUser(req);
@@ -21,7 +22,20 @@ export async function POST(req: Request) {
     .select("id, amount, status").single();
   if (error) return NextResponse.json({ error: "Could not create the order." }, { status: 500 });
 
-  // TODO (live payments): ask the payment gateway for a dynamic QRIS for this order,
-  // save its id in orders.payment_ref and return the QR string here.
-  return NextResponse.json({ order: data, qris: null });
+  // Live payment: ask DOKU for a QRIS payment page for this order
+  if (dokuEnabled() && process.env.NEXT_PUBLIC_PAYMENT_MODE !== "simulate") {
+    const site = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
+    const r = await createCheckout({
+      orderId: data.id, amount: data.amount, email: user.email ?? undefined,
+      callbackUrl: site ? `${site}/account` : undefined,
+    });
+    if (!r.ok) {
+      await supabaseAdmin().from("orders").update({ status: "expired" }).eq("id", data.id).eq("status", "pending");
+      return NextResponse.json({ error: r.message }, { status: 502 });
+    }
+    await supabaseAdmin().from("orders").update({ payment_ref: invoiceFor(data.id) }).eq("id", data.id);
+    return NextResponse.json({ order: data, payUrl: r.url });
+  }
+
+  return NextResponse.json({ order: data, payUrl: null });
 }

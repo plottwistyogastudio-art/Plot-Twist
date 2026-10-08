@@ -13,6 +13,7 @@ export type TeacherRec = {
 
 // What the public teacher card needs
 export type Teacher = TeacherRec & {
+  slug: string;         // used in the web address, e.g. /teachers/inge
   initial: string;
   tone: "blush" | "sand";
 };
@@ -31,9 +32,29 @@ export const defaultTeachers: TeacherRec[] = [
   },
 ];
 
+const slugify = (s: string) =>
+  s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+
+// Web address name: first name ("inge"). If two teachers share a first name, the full name is used.
+export function teacherSlugs(list: TeacherRec[]): Map<string, string> {
+  const firsts = list.map((t) => slugify(t.name.replace(/^[^A-Za-z0-9]+/, "").split(/\s+/)[0] ?? ""));
+  const out = new Map<string, string>();
+  const used = new Set<string>();
+  list.forEach((t, i) => {
+    let s = firsts[i];
+    if (!s || firsts.filter((f) => f === s).length > 1) s = slugify(t.name) || t.id;
+    if (used.has(s)) s = t.id;
+    used.add(s);
+    out.set(t.id, s);
+  });
+  return out;
+}
+
 export function teacherCards(list: TeacherRec[]): Teacher[] {
+  const slugs = teacherSlugs(list);
   return list.map((t, i) => ({
     ...t,
+    slug: slugs.get(t.id) ?? t.id,
     initial: (t.name.replace(/^[^A-Za-z0-9]+/, "")[0] ?? "?").toUpperCase(),
     tone: i % 2 === 0 ? "blush" : "sand",
   }));

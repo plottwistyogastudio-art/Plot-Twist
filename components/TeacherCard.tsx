@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Teacher } from "@/data/teachers";
 
 export default function TeacherCard({ teacher, full = false }: { teacher: Teacher; full?: boolean }) {
-  const href = `/teachers/${teacher.id}`;
+  const href = `/teachers/${teacher.slug}`;
   return (
     <article>
       <Link href={href} className="teacher-link" aria-label={`${teacher.name}, view profile`}>
