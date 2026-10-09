@@ -54,6 +54,7 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
               <div>
                 <div className="class-name">{c.name}</div>
                 <div className="muted small">{c.type} · {formatFullDay(c.date)}</div>
+                <span className="pill pill-inline">{c.level}</span>
               </div>
               <div className="muted" />
               <div>

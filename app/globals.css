@@ -668,3 +668,7 @@ select.admin-input { padding-right: 8px; }
 .legend-list dt { font-weight: 600; }
 .legend-list dd { margin: 2px 0 0; color: var(--muted); line-height: 1.5; }
 @media (max-width: 800px) { .legend { grid-template-columns: 1fr; gap: 32px; margin-top: 40px; } }
+
+/* Level shown under the class name when the level column is hidden (tablet + phone) */
+.pill-inline { display: none; margin-top: 8px; }
+@media (max-width: 1000px) { .pill-inline { display: inline-block; } }

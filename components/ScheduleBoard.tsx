@@ -132,6 +132,7 @@ export default function ScheduleBoard({ config }: { config: SiteConfig }) {
             <div>
               <div className="class-name">{c.name}</div>
               <div className="muted small">{c.type}</div>
+              <span className="pill pill-inline">{c.level}</span>
             </div>
             <div className="muted">{c.teacher}</div>
             <div>
