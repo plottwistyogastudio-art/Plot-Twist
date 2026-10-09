@@ -28,7 +28,7 @@ export function normalisePhone(raw: string) {
 
 async function send(target: string, message: string) {
   const to = normalisePhone(target);
-  if (!to) return;
+  if (!to) return { ok: false, detail: "Invalid number" };
   try {
     const body = new FormData();
     body.append("target", to);
@@ -41,8 +41,10 @@ async function send(target: string, message: string) {
     });
     const j = await res.json().catch(() => null);
     if (!res.ok || j?.status === false) console.error("WhatsApp send failed", res.status, j?.reason ?? j);
+    return { ok: res.ok && j?.status !== false, detail: JSON.stringify(j).slice(0, 300) };
   } catch (e) {
     console.error("WhatsApp send error", e);
+    return { ok: false, detail: String(e) };
   }
 }
 
@@ -144,4 +146,24 @@ export async function sendReminder(userId: string, key: string) {
   if (memberEmailEnabled() && m.email) { await sendEmail(m.email, `Reminder: ${c.name}, ${c.when}`, text, { toMember: true }); sent = true; }
   if (wa && m.whatsapp) { await send(m.whatsapp, text); sent = true; }
   return sent;
+}
+
+// Used by /api/cron/notify-test: sends one test message on each channel and reports what happened
+export async function testNotifications() {
+  const env = {
+    RESEND_KEY: !!(process.env.RESEND_KEY || process.env.RESEND_API_KEY),
+    NOTIFY_EMAIL_TO: !!process.env.NOTIFY_EMAIL_TO,
+    EMAIL_FROM: !!process.env.EMAIL_FROM,
+    FONNTE_TOKEN: !!process.env.FONNTE_TOKEN,
+    WA_NOTIFY_TO: !!process.env.WA_NOTIFY_TO,
+  };
+  const email = emailEnabled()
+    ? await sendEmail((process.env.NOTIFY_EMAIL_TO ?? "").split(","), "[Plot Twist] Test email", "This is a test from plottwist.id. If you can read this, studio emails work.")
+    : { ok: false, detail: "Email is not configured" };
+  let wa: { ok: boolean; detail: string } = { ok: false, detail: "WhatsApp is not configured" };
+  if (waEnabled()) {
+    const to = (process.env.WA_NOTIFY_TO ?? "").split(",").map((s) => s.trim()).filter(Boolean)[0];
+    wa = to ? (await send(to, "Plot Twist test: WhatsApp notifications work.")) ?? wa : { ok: false, detail: "WA_NOTIFY_TO is empty" };
+  }
+  return { env, email, whatsapp: wa };
 }

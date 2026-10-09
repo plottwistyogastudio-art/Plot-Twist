@@ -21,9 +21,10 @@ function html(text: string) {
 
 export async function sendEmail(to: string | string[], subject: string, text: string, opts: { toMember?: boolean } = {}) {
   const list = (Array.isArray(to) ? to : [to]).map((s) => s.trim()).filter(Boolean);
-  if (!list.length || !apiKey()) return;
+  if (!list.length) return { ok: false, detail: "No recipient (is NOTIFY_EMAIL_TO set?)" };
+  if (!apiKey()) return { ok: false, detail: "No API key (RESEND_KEY / RESEND_API_KEY)" };
   const from = process.env.EMAIL_FROM || "Plot Twist Studio <onboarding@resend.dev>";
-  if (opts.toMember && !process.env.EMAIL_FROM) return; // the test sender can only email the account owner
+  if (opts.toMember && !process.env.EMAIL_FROM) return { ok: false, detail: "EMAIL_FROM is not set, so members are not emailed" };
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -31,8 +32,11 @@ export async function sendEmail(to: string | string[], subject: string, text: st
       body: JSON.stringify({ from, to: list, subject, text, html: html(text), ...(process.env.EMAIL_REPLY_TO ? { reply_to: process.env.EMAIL_REPLY_TO } : {}) }),
       signal: AbortSignal.timeout(8000),
     });
-    if (!res.ok) console.error("Email send failed", res.status, await res.text().catch(() => ""));
+    const detail = await res.text().catch(() => "");
+    if (!res.ok) console.error("Email send failed", res.status, detail);
+    return { ok: res.ok, detail: `HTTP ${res.status} ${detail}`.slice(0, 400) };
   } catch (e) {
     console.error("Email send error", e);
+    return { ok: false, detail: String(e) };
   }
 }
