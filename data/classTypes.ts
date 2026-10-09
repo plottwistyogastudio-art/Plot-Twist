@@ -17,3 +17,19 @@ export const classTypes: ClassType[] = [
   { name: "Mat Pilates", desc: "Controlled, core-focused movement on the mat, with an emphasis on alignment and body awareness.", level: "All levels", intensity: "Light to medium", goodFor: "building core strength and body awareness" },
   { name: "Private Session", desc: "One-on-one time with a teacher, shaped around your body, goals and schedule.", level: "All levels", intensity: "Your pace", goodFor: "personal guidance and going deeper" },
 ];
+
+// Short explanations shown under the schedule ("What do these mean?")
+export const typeInfo: Record<string, string> = {
+  Vinyasa: "Breath-led movement linking poses into a flowing sequence. You'll move, build heat and feel energised.",
+  "Slow Flow": "A gentler flow with time to settle into each shape and focus on your breath.",
+  Hatha: "Classic poses held with clear alignment cues, at a steady pace. A solid base for the rest of your practice.",
+  Yin: "Long, quiet holds that release deep tension. Props and a calm room do most of the work.",
+  Prenatal: "Gentle, supportive movement and breathing for pregnancy. Please check with your doctor or midwife first.",
+  "Mat Pilates": "Controlled, core-focused movement on the mat, with attention to alignment and body awareness.",
+};
+
+export const levelInfo: Record<string, string> = {
+  Beginner: "New to yoga, or coming back after a break. The basics are explained and the pace is easy.",
+  "All levels": "Everyone is welcome. Your teacher offers options to make poses gentler or stronger.",
+  Intermediate: "Best with some regular practice. Expect a faster pace, longer holds and more strength work.",
+};

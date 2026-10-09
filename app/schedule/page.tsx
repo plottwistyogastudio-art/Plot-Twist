@@ -3,6 +3,7 @@ import Link from "next/link";
 import ScheduleBoard from "@/components/ScheduleBoard";
 import { getConfig } from "@/lib/config";
 import { teacherCards } from "@/data/teachers";
+import ClassLegend from "@/components/ClassLegend";
 import { OPENING_DATE, WEEKS_AHEAD, getClasses } from "@/data/schedule";
 import { addDays, formatFullDay, parseISO, startOfWeek, toISO, today } from "@/lib/dates";
 
@@ -23,10 +24,10 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
     const now = today();
     const from = now < opening ? opening : now;
     const end = addDays(startOfWeek(opening), WEEKS_AHEAD * 7);
-    const rows: { iso: string; date: Date; time: string; name: string; duration: string; level: string }[] = [];
+    const rows: { iso: string; date: Date; time: string; name: string; type: string; duration: string; level: string }[] = [];
     for (let d = from; d < end; d = addDays(d, 1)) {
       for (const c of getClasses(d, config)) {
-        if (c.teacher === teacher.name) rows.push({ iso: toISO(d), date: d, time: c.time, name: c.name, duration: c.duration, level: c.level });
+        if (c.teacher === teacher.name) rows.push({ iso: toISO(d), date: d, time: c.time, name: c.name, type: c.type, duration: c.duration, level: c.level });
       }
     }
     const first = teacher.name.trim().split(/\s+/)[0];
@@ -52,7 +53,7 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
               </div>
               <div>
                 <div className="class-name">{c.name}</div>
-                <div className="muted small">{formatFullDay(c.date)}</div>
+                <div className="muted small">{c.type} · {formatFullDay(c.date)}</div>
               </div>
               <div className="muted" />
               <div>
@@ -67,6 +68,8 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
             <div className="empty">No upcoming classes with {first} right now. Check the full schedule for other classes.</div>
           )}
         </div>
+
+        <ClassLegend types={[...new Set(rows.map((r) => r.type))]} levels={[...new Set(rows.map((r) => r.level))]} />
       </section>
     );
   }
@@ -83,6 +86,8 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
       </p>
 
       <ScheduleBoard config={config} />
+
+      <ClassLegend />
 
       <div className="note-band">
         <div>

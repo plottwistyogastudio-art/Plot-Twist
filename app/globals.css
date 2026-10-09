@@ -660,3 +660,11 @@ select.admin-input { padding-right: 8px; }
 /* Floating WhatsApp button */
 .wa-float { position: fixed; right: 20px; bottom: 20px; z-index: 40; width: 56px; height: 56px; border-radius: 50%; background: #25d366; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22); transition: transform 0.15s; }
 .wa-float:hover { transform: scale(1.06); }
+
+/* Class types + levels explanation */
+.legend { margin-top: 56px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px; }
+.legend-title { font-family: var(--font-display), Georgia, serif; font-size: 24px; font-weight: 400; margin: 0 0 16px; }
+.legend-list { margin: 0; display: grid; gap: 14px; }
+.legend-list dt { font-weight: 600; }
+.legend-list dd { margin: 2px 0 0; color: var(--muted); line-height: 1.5; }
+@media (max-width: 800px) { .legend { grid-template-columns: 1fr; gap: 32px; margin-top: 40px; } }
