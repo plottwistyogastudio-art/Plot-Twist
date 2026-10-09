@@ -12,7 +12,7 @@ import { defaultConfig, type SiteConfig } from "@/data/schedule";
 
 type Booking = { id: string; class_key: string; status: "booked" | "waitlist"; mat: "studio" | "own" | null };
 type Pack = { id: string; package_id: string; remaining: number; total: number; expires_at: string | null };
-type Referral = { code: string | null; qualified: number; rewards: number; untilNext: number; referredBy: boolean };
+type Referral = { hasPaid?: boolean; code: string | null; qualified: number; rewards: number; untilNext: number; referredBy: boolean };
 type Me = { email: string; credits: number; packs: Pack[]; bookings: Booking[]; profile: { full_name?: string } | null; referral?: Referral | null };
 type History = {
   packs: (Pack & { created_at: string })[];
@@ -151,6 +151,13 @@ export default function AccountView() {
       {tab === "history" && <HistoryView hist={hist} className={className} />}
 
       {me.referral?.code && <ReferralCard r={me.referral} />}
+      {me.referral && !me.referral.code && (
+        <div className="flow-card">
+          <div className="eyebrow">Invite a friend</div>
+          <div className="card-title">Unlock your referral code</div>
+          <p className="muted small">Your personal code appears here after your first package. Invite {REFERRAL_FRIENDS_PER_REWARD} new members and get {REFERRAL_REWARD_CLASSES} free {REFERRAL_REWARD_CLASSES === 1 ? "class" : "classes"}.</p>
+        </div>
+      )}
 
       <details className="data-details">
         <summary>Account settings</summary>

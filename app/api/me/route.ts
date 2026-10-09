@@ -20,8 +20,9 @@ export async function GET(req: Request) {
   let referral = null;
   if (profile) {
     const [code, stats, discountEligible] = await Promise.all([ensureReferralCode(user.id), referralStats(user.id), referralDiscountEligible(user.id)]);
-    const canApplyCode = !profile.referred_by && (await paidOrderCount(user.id)) === 0;
-    referral = { code, ...stats, referredBy: !!profile.referred_by, discountEligible, canApplyCode };
+    const hasPaid = (await paidOrderCount(user.id)) > 0;
+    const canApplyCode = !profile.referred_by && !hasPaid;
+    referral = { code, ...stats, referredBy: !!profile.referred_by, discountEligible, canApplyCode, hasPaid };
   }
   return NextResponse.json({ email: user.email, profile, packs, bookings, credits, usedFirstPlot, referral });
 }

@@ -7,9 +7,10 @@ import {
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I
 const make = () => "PLOT-" + Array.from({ length: 5 }, () => ALPHABET[Math.floor(Math.random() * ALPHABET.length)]).join("");
 
-// Every member has one code. Created the first time it is needed.
+// A member gets a code only after their first paid purchase. Created the first time it is needed.
 export async function ensureReferralCode(userId: string): Promise<string | null> {
   const db = supabaseAdmin();
+  if ((await paidOrderCount(userId)) === 0) return null;
   const { data: p } = await db.from("profiles").select("referral_code").eq("id", userId).maybeSingle();
   if (!p) return null; // no profile yet
   if (p.referral_code) return p.referral_code;
@@ -54,7 +55,7 @@ export async function applyReferralCode(userId: string, rawCode: string) {
   if (me.referred_by) return { ok: true as const, already: true };
   if ((await paidOrderCount(userId)) > 0) return { ok: false as const, message: "Referral codes are for new members only." };
   const { data: owner } = await db.from("profiles").select("id").eq("referral_code", code).maybeSingle();
-  if (!owner) return { ok: false as const, message: "We could not find this code." };
+  if (!owner || (await paidOrderCount(owner.id)) === 0) return { ok: false as const, message: "We could not find this code." };
   if (owner.id === userId) return { ok: false as const, message: "You cannot use your own code." };
   const { error } = await db.from("profiles").update({ referred_by: owner.id }).eq("id", userId).is("referred_by", null);
   if (error) return { ok: false as const, message: "Could not apply the code. Please try again." };
