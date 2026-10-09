@@ -1,12 +1,14 @@
 // Email through Resend (https://resend.com), plain fetch, no extra package.
-// RESEND_API_KEY : API key from the Resend dashboard (server only). Needed for studio emails.
+// RESEND_KEY (or RESEND_API_KEY) : API key from the Resend dashboard (server only). Needed for studio emails.
 // EMAIL_FROM     : "Plot Twist Studio <hello@yourdomain.com>", an address on a domain verified in Resend.
 //                  Needed to email members. Without it only the studio is emailed (from Resend's test sender).
 // EMAIL_REPLY_TO: where replies go when a member answers an email (e.g. your Gmail), optional.
 // NOTIFY_EMAIL_TO: studio address(es) that get every booking / purchase email, comma separated.
 // Sending never blocks or breaks a booking or payment: errors are only logged.
 
-export const emailEnabled = () => !!process.env.RESEND_API_KEY;
+// The key may be saved as RESEND_KEY or RESEND_API_KEY
+const apiKey = () => process.env.RESEND_KEY || process.env.RESEND_API_KEY || "";
+export const emailEnabled = () => !!apiKey();
 export const memberEmailEnabled = () => emailEnabled() && !!process.env.EMAIL_FROM && process.env.EMAIL_MEMBERS !== "off";
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -19,13 +21,13 @@ function html(text: string) {
 
 export async function sendEmail(to: string | string[], subject: string, text: string, opts: { toMember?: boolean } = {}) {
   const list = (Array.isArray(to) ? to : [to]).map((s) => s.trim()).filter(Boolean);
-  if (!list.length || !process.env.RESEND_API_KEY) return;
+  if (!list.length || !apiKey()) return;
   const from = process.env.EMAIL_FROM || "Plot Twist Studio <onboarding@resend.dev>";
   if (opts.toMember && !process.env.EMAIL_FROM) return; // the test sender can only email the account owner
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "content-type": "application/json" },
+      headers: { Authorization: `Bearer ${apiKey()}`, "content-type": "application/json" },
       body: JSON.stringify({ from, to: list, subject, text, html: html(text), ...(process.env.EMAIL_REPLY_TO ? { reply_to: process.env.EMAIL_REPLY_TO } : {}) }),
       signal: AbortSignal.timeout(8000),
     });
