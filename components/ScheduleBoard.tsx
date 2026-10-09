@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { authFetch, supabaseBrowser } from "@/lib/supabase";
 import { OPENING_DATE, WEEKS_AHEAD, getClasses, typeFilters, type SiteConfig } from "@/data/schedule";
 import {
   WEEKDAYS_SHORT,
@@ -21,6 +22,23 @@ export default function ScheduleBoard({ config }: { config: SiteConfig }) {
   const [week, setWeek] = useState(0); // 0 = opening week
   const [selected, setSelected] = useState<string>(OPENING_DATE);
   const [type, setType] = useState<(typeof typeFilters)[number]>("All");
+
+  // The signed-in member's own bookings, so booked classes show "Reserved" instead of "Book"
+  const [mine, setMine] = useState<Record<string, string>>({});
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await supabaseBrowser().auth.getSession();
+        if (!data.session) return;
+        const r = await authFetch("/api/me");
+        if (!r.ok) return;
+        const j = await r.json();
+        const m: Record<string, string> = {};
+        for (const b of j.bookings ?? []) m[b.class_key] = b.status;
+        setMine(m);
+      } catch { /* not signed in: show Book */ }
+    })();
+  }, []);
 
   // After the page loads, jump to the visitor's current week/day (never before opening)
   useEffect(() => {
@@ -138,9 +156,15 @@ export default function ScheduleBoard({ config }: { config: SiteConfig }) {
             <div>
               <span className="pill">{c.level}</span>
             </div>
-            <a href={`/book?class=${encodeURIComponent(selected + "_" + c.time)}`} className="btn btn-primary btn-sm class-book">
-              Book
-            </a>
+            {mine[selected + "_" + c.time] ? (
+              <button type="button" className="btn btn-outline btn-sm class-book is-reserved" disabled>
+                {mine[selected + "_" + c.time] === "waitlist" ? "Waitlisted" : "Reserved"}
+              </button>
+            ) : (
+              <a href={`/book?class=${encodeURIComponent(selected + "_" + c.time)}`} className="btn btn-primary btn-sm class-book">
+                Book
+              </a>
+            )}
           </div>
         ))}
         {list.length === 0 && (

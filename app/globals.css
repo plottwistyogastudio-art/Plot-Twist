@@ -684,3 +684,7 @@ select.admin-input { padding-right: 8px; }
 .ref-row { display: flex; gap: 8px; margin-top: 8px; }
 .ref-row input { flex: 1; min-width: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: transparent; font: inherit; text-transform: uppercase; }
 .ref-card .admin-actions { flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+
+/* Already-booked class: greyed out, not clickable */
+.class-book.is-reserved,
+.class-book.is-reserved:hover { opacity: 1; background: transparent; color: var(--muted, #8a8580); border-color: currentColor; cursor: default; pointer-events: none; }

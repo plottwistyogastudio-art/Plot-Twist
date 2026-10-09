@@ -11,7 +11,7 @@ import { REFERRAL_DISCOUNT_PCT, REFERRAL_ON_FIRST_PLOT, REFERRAL_STORAGE_KEY, no
 
 type ClassInfo = { iso: string; time: string; name: string; duration: string; teacher: string; spotsLeft: number; full: boolean };
 type Referral = { code: string | null; referredBy: boolean; discountEligible: boolean; canApplyCode: boolean };
-type Me = { email: string; credits: number; usedFirstPlot: boolean; profile: { full_name?: string } | null; referral?: Referral | null };
+type Me = { email: string; credits: number; usedFirstPlot: boolean; profile: { full_name?: string } | null; referral?: Referral | null; bookings?: { class_key: string; status: string }[] };
 type Done = { kind: "booked" | "waitlist" | "package"; credits?: number; bookingId?: string };
 
 const SIMULATE = process.env.NEXT_PUBLIC_PAYMENT_MODE === "simulate";
@@ -196,6 +196,23 @@ export default function BookingFlow({ classKey, packageId }: { classKey?: string
         <h1 className="h1 h1-page">Your details</h1>
         {classCard}
         <AuthForm onDone={async () => { await loadMe(); }} />
+      </div>
+    );
+  }
+
+  // ---------- Already reserved: no double booking ----------
+  const mine = classKey ? me.bookings?.find((b) => b.class_key === classKey) : undefined;
+  if (mine && !orderId) {
+    return (
+      <div className="flow center-col">
+        <div className="flow-tick" aria-hidden>{mine.status === "waitlist" ? "…" : "✓"}</div>
+        <h1 className="h1 h1-page">{mine.status === "waitlist" ? "You're on the waitlist" : "Already reserved"}</h1>
+        {classCard}
+        <p className="flow-note">You already have a spot in this class.</p>
+        <div className="flow-actions">
+          <Link href="/account" className="btn btn-primary btn-block">View my bookings</Link>
+          <Link href="/schedule" className="btn btn-outline btn-block">Browse classes</Link>
+        </div>
       </div>
     );
   }
