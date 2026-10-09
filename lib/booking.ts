@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { CANCEL_HOURS, findClass as findClassIn, classStart } from "@/lib/booking-shared";
 import { getConfig } from "@/lib/config";
 import { qualifyReferral } from "@/lib/referral";
+import { notifyBooked, notifyCancelled, notifyPurchase } from "@/lib/notify";
 export { CANCEL_HOURS, classStart };
 
 // Looks the class up in the live (admin-edited) schedule
@@ -85,6 +86,7 @@ export async function bookClass(userId: string, key: string): Promise<BookResult
       return { status: "error", message: "This class is full and the waitlist has closed." };
     const { data, error } = await db.from("bookings").insert({ user_id: userId, class_key: key, status: "waitlist" }).select("id").single();
     if (error) return { status: "error", message: "Could not join the waitlist." };
+    notifyBooked(userId, key, "waitlist");
     return { status: "waitlist", bookingId: data.id, packRemaining: pack.remaining };
   }
 
@@ -109,6 +111,7 @@ export async function bookClass(userId: string, key: string): Promise<BookResult
     await db.from("credit_packs").update({ remaining: pack.remaining, expires_at: pack.expires_at }).eq("id", pack.id);
     return { status: "error", message: "Sorry, someone just took the last spot. Please try again to join the waitlist." };
   }
+  notifyBooked(userId, key, "booked");
   return { status: "booked", bookingId: data.id, packRemaining: taken.remaining };
 }
 
@@ -138,6 +141,7 @@ export async function cancelBooking(userId: string, bookingId: string, opts: { r
   }
   // A seat freed up (even a late cancel frees the seat, just no refund)
   if (b.status === "booked") await promoteWaitlist(b.class_key);
+  notifyCancelled(userId, b.class_key, b.status === "booked", refund);
   return { ok: true, refunded: refund };
 }
 
@@ -154,7 +158,7 @@ async function promoteWaitlist(key: string) {
       .update(useCredit(pack)).eq("id", pack.id).eq("remaining", pack.remaining).select("id").single();
     if (!taken) continue;
     await db.from("bookings").update({ status: "booked", pack_id: pack.id }).eq("id", w.id);
-    // TODO: message them (email / WhatsApp) that they are in
+    notifyBooked(w.user_id, key, "promoted");
     return;
   }
 }
@@ -188,6 +192,7 @@ export async function fulfillOrder(orderId: string) {
   });
   if (error) return { ok: false as const, message: "Could not add credits." };
 
+  notifyPurchase(order.user_id, pkg.name, pkg.classes, order.amount);
   try { await qualifyReferral(order.user_id); } catch { /* never block a paid order */ }
 
   const booking = order.class_key ? await bookClass(order.user_id, order.class_key) : null;
@@ -206,5 +211,6 @@ export async function promoteBooking(bookingId: string) {
     .update(useCredit(pack)).eq("id", pack.id).eq("remaining", pack.remaining).select("id").single();
   if (!taken) return { ok: false, message: "Please try again." };
   await db.from("bookings").update({ status: "booked", pack_id: pack.id }).eq("id", w.id);
+  notifyBooked(w.user_id, w.class_key, "promoted");
   return { ok: true };
 }

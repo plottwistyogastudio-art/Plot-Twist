@@ -92,3 +92,6 @@ alter table profiles add column if not exists referred_by uuid references auth.u
 alter table profiles add column if not exists referral_qualified_at timestamptz;  -- set when the referred member pays their first order
 create unique index if not exists profiles_referral_code_key on profiles (referral_code) where referral_code is not null;
 alter table orders add column if not exists discount int not null default 0;     -- IDR taken off by a referral discount
+
+-- ---- WhatsApp reminders ----
+alter table bookings add column if not exists reminded_at timestamptz;

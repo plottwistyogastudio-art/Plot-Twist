@@ -164,7 +164,8 @@ button { font-family: inherit; cursor: pointer; }
   align-items: center;
   justify-content: center;
 }
-.hero-art img { width: min(420px, 80%); height: auto; mix-blend-mode: multiply; }
+.hero-art { padding: 32px 0; }
+.hero-art img { width: min(400px, 74%); height: auto; }
 
 /* ---------- Info strip ---------- */
 .info-strip { background: var(--sand); }
@@ -404,7 +405,8 @@ button { font-family: inherit; cursor: pointer; }
   .nav-book { margin-top: 16px; }
 
   .hero { grid-template-columns: 1fr; gap: 28px; padding-top: 20px; padding-bottom: 40px; }
-  .hero-art { min-height: 300px; border-radius: 140px 140px 24px 24px; }
+  .hero-art { min-height: 300px; padding: 28px 0; border-radius: 140px 140px 24px 24px; }
+  .hero-art img { width: min(280px, 70%); }
   .info-grid { grid-template-columns: 1fr; gap: 20px; padding-top: 28px; padding-bottom: 28px; }
   .section-head { flex-direction: column; align-items: flex-start; gap: 12px; margin-bottom: 24px; }
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
@@ -670,6 +672,8 @@ select.admin-input { padding-right: 8px; }
 @media (max-width: 800px) { .legend { grid-template-columns: 1fr; gap: 32px; margin-top: 40px; } }
 
 /* Level shown under the class name when the level column is hidden (tablet + phone) */
+.teacher-inline { display: none; }
+@media (max-width: 760px) { .teacher-inline { display: inline; } }
 .pill-inline { display: none; margin-top: 8px; }
 @media (max-width: 1000px) { .pill-inline { display: inline-block; } }
 

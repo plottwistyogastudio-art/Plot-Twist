@@ -48,7 +48,7 @@ export default async function HomePage() {
           </div>
         </div>
         <div className="hero-art">
-          <Image src="/logo.png" alt="Plot Twist" width={420} height={267} priority />
+          <Image src="/brand/twisty.png" alt="Twisty, the Plot Twist cat, stretching in downward dog" width={577} height={623} priority />
         </div>
       </section>
 
@@ -60,7 +60,6 @@ export default async function HomePage() {
           </div>
           <div>
             <div className="eyebrow">Open</div>
-            <div>{site.hours}</div>
             <div>Daily classes for all levels</div>
           </div>
           <div>

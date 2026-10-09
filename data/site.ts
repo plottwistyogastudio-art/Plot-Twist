@@ -6,7 +6,6 @@ export const site = {
     "A boutique yoga studio in Lippo Karawaci. Warm, playful and made for every level.",
   // TODO: replace with the real address and hours
   addressLines: ["3rd floor, The Hive Essence no 25", "Lippo Karawaci"],
-  hours: "[Opening hours]",
   instagramHandle: "@plottwiststudio.id",
   instagramUrl: "https://instagram.com/plottwiststudio.id",
   // TODO: put the studio's WhatsApp number here, digits only with country code (no + or spaces),
