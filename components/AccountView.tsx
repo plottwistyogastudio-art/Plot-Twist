@@ -3,15 +3,17 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { authFetch, supabaseBrowser } from "@/lib/supabase";
-import { findPackage, findClass, classStart } from "@/lib/booking-shared";
+import { packLabel, findClass, classStart } from "@/lib/booking-shared";
 import { buildIcs, downloadFile } from "@/lib/ics";
 import { formatFullDay, parseISO } from "@/lib/dates";
 import { formatIDR } from "@/data/packages";
+import { REFERRAL_DISCOUNT_PCT, REFERRAL_FRIENDS_PER_REWARD, REFERRAL_REWARD_CLASSES, REFERRAL_REWARD_VALID_DAYS } from "@/data/referral";
 import { defaultConfig, type SiteConfig } from "@/data/schedule";
 
 type Booking = { id: string; class_key: string; status: "booked" | "waitlist"; mat: "studio" | "own" | null };
 type Pack = { id: string; package_id: string; remaining: number; total: number; expires_at: string | null };
-type Me = { email: string; credits: number; packs: Pack[]; bookings: Booking[]; profile: { full_name?: string } | null };
+type Referral = { code: string | null; qualified: number; rewards: number; untilNext: number; referredBy: boolean };
+type Me = { email: string; credits: number; packs: Pack[]; bookings: Booking[]; profile: { full_name?: string } | null; referral?: Referral | null };
 type History = {
   packs: (Pack & { created_at: string })[];
   bookings: { id: string; class_key: string; status: string; checked_in_at: string | null; created_at: string }[];
@@ -148,6 +150,8 @@ export default function AccountView() {
 
       {tab === "history" && <HistoryView hist={hist} className={className} />}
 
+      {me.referral?.code && <ReferralCard r={me.referral} />}
+
       <details className="data-details">
         <summary>Account settings</summary>
         <p className="muted small">
@@ -163,7 +167,7 @@ export default function AccountView() {
   );
 }
 
-const packName = (id: string) => findPackage(id)?.name ?? (id === "manual" ? "Added by studio" : id);
+const packName = packLabel;
 
 function HistoryView({ hist, className }: { hist: History | null; className: (key: string) => string }) {
   if (!hist) return <p className="muted">Loading…</p>;
@@ -217,5 +221,30 @@ function HistoryView({ hist, className }: { hist: History | null; className: (ke
         </div>
       ))}
     </>
+  );
+}
+
+function ReferralCard({ r }: { r: Referral }) {
+  const [copied, setCopied] = useState("");
+  const link = `${typeof window === "undefined" ? "" : window.location.origin}/book?ref=${r.code}`;
+  const text = `Join me at Plot Twist Studio! Use my code ${r.code} for ${REFERRAL_DISCOUNT_PCT}% off your first regular package: ${link}`;
+  async function copy(what: string, value: string) {
+    try { await navigator.clipboard.writeText(value); setCopied(what); setTimeout(() => setCopied(""), 2000); } catch { /* ignore */ }
+  }
+  const cls = REFERRAL_REWARD_CLASSES === 1 ? "free class" : "free classes";
+  return (
+    <div className="flow-card ref-card">
+      <div className="eyebrow">Invite a friend</div>
+      <div className="card-title">Your code: {r.code}</div>
+      <p className="muted small">
+        Your friend gets {REFERRAL_DISCOUNT_PCT}% off their first regular package (not combinable with First Plot). When {REFERRAL_FRIENDS_PER_REWARD} new members you invited have paid for their first package, you get {REFERRAL_REWARD_CLASSES} {cls} (valid {REFERRAL_REWARD_VALID_DAYS} days).
+      </p>
+      <p className="small"><b>{r.qualified}</b> {r.qualified === 1 ? "friend" : "friends"} joined · {r.rewards} {r.rewards === 1 ? "reward" : "rewards"} earned · {r.untilNext} more for the next one</p>
+      <div className="admin-actions">
+        <button className="btn btn-outline btn-sm" onClick={() => copy("code", r.code!)}>{copied === "code" ? "Copied" : "Copy code"}</button>
+        <button className="btn btn-outline btn-sm" onClick={() => copy("link", link)}>{copied === "link" ? "Copied" : "Copy link"}</button>
+        <a className="btn btn-primary btn-sm" href={`https://wa.me/?text=${encodeURIComponent(text)}`} target="_blank" rel="noopener noreferrer">Share on WhatsApp</a>
+      </div>
+    </div>
   );
 }

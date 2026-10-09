@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getUser, supabaseAdmin } from "@/lib/supabase";
 import { findClass, findPackage, hasUsedFirstPlot } from "@/lib/booking";
 import { firstPlotOpen } from "@/data/packages";
+import { priceFor } from "@/lib/referral";
 import { createCheckout, dokuEnabled, invoiceFor } from "@/lib/doku";
 
 export async function POST(req: Request) {
@@ -17,8 +18,9 @@ export async function POST(req: Request) {
   if (pkg.oncePerPerson && (await hasUsedFirstPlot(user.id)))
     return NextResponse.json({ error: "First Plot can only be bought once per person." }, { status: 409 });
 
+  const { amount, discount } = await priceFor(user.id, pkg);
   const { data, error } = await supabaseAdmin().from("orders")
-    .insert({ user_id: user.id, package_id: pkg.id, class_key: classKey ?? null, amount: pkg.price })
+    .insert({ user_id: user.id, package_id: pkg.id, class_key: classKey ?? null, amount, discount })
     .select("id, amount, status").single();
   if (error) return NextResponse.json({ error: "Could not create the order." }, { status: 500 });
 

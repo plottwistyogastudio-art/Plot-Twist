@@ -85,3 +85,10 @@ create table if not exists site_config (
   updated_by text
 );
 alter table site_config enable row level security;
+
+-- ---- Referral programme ----
+alter table profiles add column if not exists referral_code text;
+alter table profiles add column if not exists referred_by uuid references auth.users(id) on delete set null;
+alter table profiles add column if not exists referral_qualified_at timestamptz;  -- set when the referred member pays their first order
+create unique index if not exists profiles_referral_code_key on profiles (referral_code) where referral_code is not null;
+alter table orders add column if not exists discount int not null default 0;     -- IDR taken off by a referral discount

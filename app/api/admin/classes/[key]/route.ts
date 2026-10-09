@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireAdmin, forbidden } from "@/lib/admin";
 import { supabaseAdmin } from "@/lib/supabase";
-import { findClass, findPackage } from "@/lib/booking";
+import { findClass } from "@/lib/booking";
+import { packLabel } from "@/lib/booking-shared";
 import { CLASS_CAPACITY } from "@/data/schedule";
 
 export async function GET(req: Request, { params }: { params: Promise<{ key: string }> }) {
@@ -24,7 +25,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ key: str
     return {
       id: b.id, userId: b.user_id, status: b.status, mat: b.mat ?? null, checkedIn: !!b.checked_in_at,
       name: p?.full_name || p?.email || "Member", whatsapp: p?.whatsapp ?? "", email: p?.email ?? "",
-      pack: pack ? `${findPackage(pack.package_id)?.name ?? pack.package_id} · ${pack.remaining} left` : "No credit",
+      pack: pack ? `${packLabel(pack.package_id)} · ${pack.remaining} left` : "No credit",
     };
   });
   return NextResponse.json({ key, ...cls.session, iso: cls.iso, capacity: CLASS_CAPACITY, booked: people.filter((p) => p.status === "booked"), waitlist: people.filter((p) => p.status === "waitlist") });

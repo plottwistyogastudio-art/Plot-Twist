@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 
 import { CANCEL_HOURS, findClass as findClassIn, classStart } from "@/lib/booking-shared";
 import { getConfig } from "@/lib/config";
+import { qualifyReferral } from "@/lib/referral";
 export { CANCEL_HOURS, classStart };
 
 // Looks the class up in the live (admin-edited) schedule
@@ -186,6 +187,8 @@ export async function fulfillOrder(orderId: string) {
     is_first_plot: !!pkg.oncePerPerson,
   });
   if (error) return { ok: false as const, message: "Could not add credits." };
+
+  try { await qualifyReferral(order.user_id); } catch { /* never block a paid order */ }
 
   const booking = order.class_key ? await bookClass(order.user_id, order.class_key) : null;
   return { ok: true as const, booking };

@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import HideOnAdmin from "@/components/HideOnAdmin";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import ReferralCapture from "@/components/ReferralCapture";
 import { site } from "@/data/site";
 import "./globals.css";
 
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${display.variable} ${body.variable}`}>
       <body>
+        <ReferralCapture />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <HideOnAdmin><Header /></HideOnAdmin>
         <main>{children}</main>

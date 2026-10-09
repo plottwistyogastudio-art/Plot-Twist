@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { authFetch } from "@/lib/supabase";
 import { formatFullDay, parseISO } from "@/lib/dates";
 import { formatIDR } from "@/data/packages";
-import { findPackage } from "@/lib/booking-shared";
+import { packLabel } from "@/lib/booking-shared";
 
 type Member = { id: string; full_name: string | null; email: string | null; whatsapp: string | null; summary: string };
 type Pack = { id: string; package_id: string; total: number; remaining: number; expires_at: string | null; valid_days: number | null };
@@ -80,7 +80,7 @@ function MemberDetail({ id }: { id: string }) {
   type Ev = { at: string; text: string; right: string };
   const events: Ev[] = [
     ...d.bookings.map((b) => { const [iso, t] = b.class_key.split("_"); return { at: b.created_at, text: `${b.status === "cancelled" ? "Cancelled" : b.status === "waitlist" ? "Waitlist" : "Booked"} · ${formatFullDay(parseISO(iso))} ${t}`, right: "" }; }),
-    ...d.orders.map((o) => ({ at: o.created_at, text: `${o.status === "paid" ? "Paid" : "Order (" + o.status + ")"} · ${findPackage(o.package_id)?.name ?? o.package_id}`, right: formatIDR(o.amount) })),
+    ...d.orders.map((o) => ({ at: o.created_at, text: `${o.status === "paid" ? "Paid" : "Order (" + o.status + ")"} · ${packLabel(o.package_id)}`, right: formatIDR(o.amount) })),
     ...d.adjustments.map((a) => ({ at: a.created_at, text: `Credits ${a.delta > 0 ? "+" : ""}${a.delta} · ${a.reason}`, right: a.admin_email ?? "" })),
   ].sort((a, b) => b.at.localeCompare(a.at));
 
@@ -100,7 +100,7 @@ function MemberDetail({ id }: { id: string }) {
           {active.length === 0 && <div className="muted small">No active packages.</div>}
           {active.map((p) => (
             <div key={p.id} className="muted small">
-              {findPackage(p.package_id)?.name ?? (p.package_id === "manual" ? "Added by studio" : p.package_id)}: {p.remaining} of {p.total}
+              {packLabel(p.package_id)}: {p.remaining} of {p.total}
               {p.expires_at ? ` · until ${fmtDate(p.expires_at)}` : " · starts at first booking"}
             </div>
           ))}

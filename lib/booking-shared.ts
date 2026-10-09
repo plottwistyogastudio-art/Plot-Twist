@@ -2,6 +2,9 @@
 import { firstPlot, packages } from "@/data/packages";
 export const findPackage = (id: string) => [...packages, ...firstPlot].find((p) => p.id === id);
 
+export const packLabel = (id: string) =>
+  findPackage(id)?.name ?? (id === "manual" ? "Added by studio" : id === "referral-reward" ? "Referral reward" : id);
+
 // Hours before class when cancelling still returns the credit (also used in lib/booking.ts)
 export const CANCEL_HOURS = 12;
 

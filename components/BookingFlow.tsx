@@ -7,9 +7,11 @@ import { firstPlot, firstPlotOpen, formatIDR, packages, perClass, type Pkg } fro
 import { formatFullDay, parseISO } from "@/lib/dates";
 import { CANCEL_HOURS } from "@/lib/booking-shared";
 import { buildIcs, downloadFile } from "@/lib/ics";
+import { REFERRAL_DISCOUNT_PCT, REFERRAL_ON_FIRST_PLOT, REFERRAL_STORAGE_KEY, normaliseCode, referralPrice } from "@/data/referral";
 
 type ClassInfo = { iso: string; time: string; name: string; duration: string; teacher: string; spotsLeft: number; full: boolean };
-type Me = { email: string; credits: number; usedFirstPlot: boolean; profile: { full_name?: string } | null };
+type Referral = { code: string | null; referredBy: boolean; discountEligible: boolean; canApplyCode: boolean };
+type Me = { email: string; credits: number; usedFirstPlot: boolean; profile: { full_name?: string } | null; referral?: Referral | null };
 type Done = { kind: "booked" | "waitlist" | "package"; credits?: number; bookingId?: string };
 
 const SIMULATE = process.env.NEXT_PUBLIC_PAYMENT_MODE === "simulate";
@@ -26,6 +28,9 @@ export default function BookingFlow({ classKey, packageId }: { classKey?: string
   const [busy, setBusy] = useState(false);
   const [mat, setMat] = useState<"studio" | "own" | null>(null);
   const [matAsked, setMatAsked] = useState(false);
+  const [orderAmount, setOrderAmount] = useState<number | null>(null);
+  const [refInput, setRefInput] = useState("");
+  const [refMsg, setRefMsg] = useState("");
 
   const loadMe = useCallback(async () => {
     const { data } = await supabaseBrowser().auth.getSession();
@@ -33,6 +38,27 @@ export default function BookingFlow({ classKey, packageId }: { classKey?: string
     const r = await authFetch("/api/me");
     setMe(r.ok ? await r.json() : null);
   }, []);
+
+  async function applyCode(raw: string, quiet = false) {
+    const code = normaliseCode(raw);
+    if (!code) return;
+    const r = await authFetch("/api/referral", { method: "POST", body: JSON.stringify({ code }) });
+    const j = await r.json().catch(() => ({}));
+    try { localStorage.removeItem(REFERRAL_STORAGE_KEY); } catch { /* ignore */ }
+    if (r.ok) { setRefMsg(`Code applied: ${REFERRAL_DISCOUNT_PCT}% off your first regular package${REFERRAL_ON_FIRST_PLOT ? "" : " (not combinable with First Plot)"}.`); await loadMe(); }
+    else if (!quiet) setRefMsg(j.error ?? "Could not apply the code.");
+  }
+
+  // A friend's link (?ref=) was remembered earlier: apply it once the member is signed in
+  useEffect(() => {
+    if (!me?.referral?.canApplyCode) return;
+    let stored = "";
+    try { stored = localStorage.getItem(REFERRAL_STORAGE_KEY) ?? ""; } catch { /* ignore */ }
+    if (stored) applyCode(stored, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [me?.referral?.canApplyCode]);
+
+  const priceOf = (p: Pkg) => (me?.referral?.discountEligible && (REFERRAL_ON_FIRST_PLOT || !p.oncePerPerson) ? referralPrice(p.price) : p.price);
 
   useEffect(() => {
     (async () => {
@@ -85,6 +111,7 @@ export default function BookingFlow({ classKey, packageId }: { classKey?: string
     setBusy(false);
     if (!r.ok) { setError(j.error ?? "Could not start the payment."); return; }
     setPayUrl(j.payUrl ?? null);
+    setOrderAmount(j.order.amount);
     setOrderId(j.order.id);
   }
 
@@ -181,7 +208,8 @@ export default function BookingFlow({ classKey, packageId }: { classKey?: string
         <div className="eyebrow">Step 3 of 3</div>
         <h1 className="h1 h1-page">Checkout</h1>
         <div className="flow-card">
-          <div className="flow-row"><div><div className="card-title">{pkg.name}</div><div className="muted small">{pkg.classes} {pkg.classes === 1 ? "class" : "classes"} · valid {pkg.validity}</div></div><div className="price-sm">{formatIDR(pkg.price)}</div></div>
+          <div className="flow-row"><div><div className="card-title">{pkg.name}</div><div className="muted small">{pkg.classes} {pkg.classes === 1 ? "class" : "classes"} · valid {pkg.validity}</div></div><div className="price-sm">{formatIDR(orderAmount ?? pkg.price)}</div></div>
+          {orderAmount !== null && orderAmount < pkg.price && <div className="muted small flow-sep">Referral discount applied: <s>{formatIDR(pkg.price)}</s></div>}
           {cls && <div className="muted small flow-sep"><b>Booked after payment:</b><br />{cls.name} · {formatFullDay(parseISO(cls.iso))} · {cls.time}</div>}
         </div>
         <div className="flow-card center-col">
@@ -198,7 +226,7 @@ export default function BookingFlow({ classKey, packageId }: { classKey?: string
             </>
           )}
         </div>
-        <div className="flow-total"><span className="strong">Total</span><span className="price-sm">{formatIDR(pkg.price)}</span></div>
+        <div className="flow-total"><span className="strong">Total</span><span className="price-sm">{formatIDR(orderAmount ?? pkg.price)}</span></div>
         {SIMULATE && (
           <button className="btn btn-dark btn-block" onClick={simulatePay} disabled={busy}>Simulate payment (testing only)</button>
         )}
@@ -241,14 +269,26 @@ export default function BookingFlow({ classKey, packageId }: { classKey?: string
               <span className="card-title">{p.name}</span>
               <span className="muted small">{p.classes} {p.classes === 1 ? "class" : "classes"} · valid {p.validity}{p.classes > 1 ? ` · ${formatIDR(perClass(p))} per class` : ""}</span>
               {p.regularPrice && <span className="muted small">Regular <s>{formatIDR(p.regularPrice)}</s></span>}
+              {priceOf(p) < p.price && <span className="muted small">Referral discount <s>{formatIDR(p.price)}</s></span>}
             </span>
-            <span className="price-sm">{formatIDR(p.price)}</span>
+            <span className="price-sm">{formatIDR(priceOf(p))}</span>
           </label>
         ))}
       </div>
+      {me.referral?.discountEligible && <p className="flow-note">{refMsg || `Referral discount active: ${REFERRAL_DISCOUNT_PCT}% off your first purchase of a regular package.${REFERRAL_ON_FIRST_PLOT ? "" : " It cannot be combined with First Plot, and it is used up once you buy First Plot."}`}</p>}
+      {me.referral?.canApplyCode && !me.referral.referredBy && (
+        <details className="ref-box">
+          <summary>Have a referral code?</summary>
+          <div className="ref-row">
+            <input aria-label="Referral code" placeholder="PLOT-XXXXX" value={refInput} onChange={(e) => setRefInput(e.target.value)} />
+            <button type="button" className="btn btn-outline btn-sm" onClick={() => applyCode(refInput)}>Apply</button>
+          </div>
+          {refMsg && <p className="flow-note" role="status">{refMsg}</p>}
+        </details>
+      )}
       {error && <p className="flow-error" role="alert">{error}</p>}
       <button className="btn btn-primary btn-block" onClick={startPayment} disabled={!selected || busy}>
-        {selected ? `Continue · ${formatIDR(selected.price)}` : "Choose a package"}
+        {selected ? `Continue · ${formatIDR(priceOf(selected))}` : "Choose a package"}
       </button>
     </div>
   );

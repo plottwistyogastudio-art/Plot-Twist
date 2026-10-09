@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin, forbidden } from "@/lib/admin";
 import { supabaseAdmin } from "@/lib/supabase";
-import { findPackage } from "@/lib/booking";
+import { packLabel } from "@/lib/booking-shared";
 
 export async function GET(req: Request) {
   if (!(await requireAdmin(req))) return forbidden();
@@ -18,7 +18,7 @@ export async function GET(req: Request) {
   return NextResponse.json({
     members: (members ?? []).map((m) => {
       const mine = (packs ?? []).filter((p) => p.user_id === m.id && (!p.expires_at || new Date(p.expires_at).getTime() > now));
-      return { ...m, credits: mine.reduce((n, p) => n + p.remaining, 0), summary: mine.length ? mine.map((p) => `${findPackage(p.package_id)?.name ?? p.package_id} · ${p.remaining} left`).join(", ") : "No credits" };
+      return { ...m, credits: mine.reduce((n, p) => n + p.remaining, 0), summary: mine.length ? mine.map((p) => `${packLabel(p.package_id)} · ${p.remaining} left`).join(", ") : "No credits" };
     }),
   });
 }

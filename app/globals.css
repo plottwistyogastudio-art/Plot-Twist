@@ -672,3 +672,10 @@ select.admin-input { padding-right: 8px; }
 /* Level shown under the class name when the level column is hidden (tablet + phone) */
 .pill-inline { display: none; margin-top: 8px; }
 @media (max-width: 1000px) { .pill-inline { display: inline-block; } }
+
+/* Referral */
+.ref-box { margin: 12px 0; }
+.ref-box summary { cursor: pointer; color: var(--deep, inherit); font-weight: 600; }
+.ref-row { display: flex; gap: 8px; margin-top: 8px; }
+.ref-row input { flex: 1; min-width: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: transparent; font: inherit; text-transform: uppercase; }
+.ref-card .admin-actions { flex-wrap: wrap; gap: 8px; margin-top: 10px; }

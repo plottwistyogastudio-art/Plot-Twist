@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getUser, supabaseAdmin } from "@/lib/supabase";
 import { hasUsedFirstPlot, cancelBooking } from "@/lib/booking";
+import { ensureReferralCode, paidOrderCount, referralDiscountEligible, referralStats } from "@/lib/referral";
 import { PRIVACY_VERSION, TERMS_VERSION } from "@/data/legal";
 
 export async function GET(req: Request) {
@@ -16,7 +17,13 @@ export async function GET(req: Request) {
   ]);
   if (profile && !profile.email && user.email) await db.from("profiles").update({ email: user.email }).eq("id", user.id);
   const credits = (packs ?? []).reduce((n, p) => n + p.remaining, 0);
-  return NextResponse.json({ email: user.email, profile, packs, bookings, credits, usedFirstPlot });
+  let referral = null;
+  if (profile) {
+    const [code, stats, discountEligible] = await Promise.all([ensureReferralCode(user.id), referralStats(user.id), referralDiscountEligible(user.id)]);
+    const canApplyCode = !profile.referred_by && (await paidOrderCount(user.id)) === 0;
+    referral = { code, ...stats, referredBy: !!profile.referred_by, discountEligible, canApplyCode };
+  }
+  return NextResponse.json({ email: user.email, profile, packs, bookings, credits, usedFirstPlot, referral });
 }
 
 // Save name + WhatsApp (called right after sign up)
