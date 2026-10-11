@@ -9,7 +9,7 @@ import { CANCEL_HOURS } from "@/lib/booking-shared";
 import { buildIcs, downloadFile } from "@/lib/ics";
 import { REFERRAL_DISCOUNT_PCT, REFERRAL_ON_FIRST_PLOT, REFERRAL_STORAGE_KEY, normaliseCode, referralPrice } from "@/data/referral";
 
-type ClassInfo = { iso: string; time: string; name: string; duration: string; teacher: string; spotsLeft: number; full: boolean };
+type ClassInfo = { cancelled?: boolean; iso: string; time: string; name: string; duration: string; teacher: string; spotsLeft: number; full: boolean };
 type Referral = { code: string | null; referredBy: boolean; discountEligible: boolean; canApplyCode: boolean };
 type Me = { email: string; credits: number; usedFirstPlot: boolean; profile: { full_name?: string } | null; referral?: Referral | null; bookings?: { class_key: string; status: string }[] };
 type Done = { kind: "booked" | "waitlist" | "package"; credits?: number; bookingId?: string };
@@ -184,6 +184,18 @@ export default function BookingFlow({ classKey, packageId }: { classKey?: string
           )}
           <Link href="/schedule" className="btn btn-outline btn-block">Browse classes</Link>
         </div>
+      </div>
+    );
+  }
+
+  // ---------- Class cancelled by the studio ----------
+  if (cls?.cancelled && !done) {
+    return (
+      <div className="flow center-col">
+        <h1 className="h1 h1-page">This class is cancelled</h1>
+        {classCard}
+        <p className="flow-note">Sorry, this class will not run. Please choose another class.</p>
+        <div className="flow-actions"><Link href="/schedule" className="btn btn-primary btn-block">Browse classes</Link></div>
       </div>
     );
   }

@@ -688,3 +688,7 @@ select.admin-input { padding-right: 8px; }
 /* Already-booked class: greyed out, not clickable */
 .class-book.is-reserved,
 .class-book.is-reserved:hover { opacity: 1; background: transparent; color: var(--muted, #8a8580); border-color: currentColor; cursor: default; pointer-events: none; }
+
+/* Class cancelled by the studio: stays on the schedule, greyed out */
+.class-row.is-cancelled > div:not(.class-book) { opacity: .5; }
+.class-row.is-cancelled .class-name, .class-row.is-cancelled .class-time { text-decoration: line-through; }

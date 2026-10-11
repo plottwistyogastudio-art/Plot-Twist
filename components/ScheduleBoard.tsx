@@ -142,7 +142,7 @@ export default function ScheduleBoard({ config }: { config: SiteConfig }) {
 
       <div className="class-list">
         {list.map((c) => (
-          <div className="class-row" key={c.time + c.name}>
+          <div className={`class-row ${c.cancelled ? "is-cancelled" : ""}`} key={c.time + c.name}>
             <div>
               <div className="class-time">{c.time}</div>
               <div className="muted small">{c.duration}</div>
@@ -156,7 +156,9 @@ export default function ScheduleBoard({ config }: { config: SiteConfig }) {
             <div>
               <span className="pill">{c.level}</span>
             </div>
-            {mine[selected + "_" + c.time] ? (
+            {c.cancelled ? (
+              <button type="button" className="btn btn-outline btn-sm class-book is-reserved" disabled>Cancelled</button>
+            ) : mine[selected + "_" + c.time] ? (
               <button type="button" className="btn btn-outline btn-sm class-book is-reserved" disabled>
                 {mine[selected + "_" + c.time] === "waitlist" ? "Waitlisted" : "Reserved"}
               </button>

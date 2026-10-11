@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin, forbidden } from "@/lib/admin";
 import { supabaseAdmin } from "@/lib/supabase";
-import { findClass } from "@/lib/booking";
+import { findClass, cancelClassSession, reopenClassSession } from "@/lib/booking";
 import { packLabel } from "@/lib/booking-shared";
 import { CLASS_CAPACITY } from "@/data/schedule";
 
@@ -28,5 +28,19 @@ export async function GET(req: Request, { params }: { params: Promise<{ key: str
       pack: pack ? `${packLabel(pack.package_id)} · ${pack.remaining} left` : "No credit",
     };
   });
-  return NextResponse.json({ key, ...cls.session, iso: cls.iso, capacity: CLASS_CAPACITY, booked: people.filter((p) => p.status === "booked"), waitlist: people.filter((p) => p.status === "waitlist") });
+  return NextResponse.json({ key, ...cls.session, cancelled: !!cls.session.cancelled, iso: cls.iso, capacity: CLASS_CAPACITY, booked: people.filter((p) => p.status === "booked"), waitlist: people.filter((p) => p.status === "waitlist") });
+}
+
+// Cancel (or reopen) this one class on this one date
+export async function POST(req: Request, { params }: { params: Promise<{ key: string }> }) {
+  const admin = await requireAdmin(req);
+  if (!admin) return forbidden();
+  const key = decodeURIComponent((await params).key);
+  const body = await req.json().catch(() => ({}));
+  const res = body?.action === "reopen"
+    ? await reopenClassSession(key, admin.email ?? null)
+    : body?.action === "cancel"
+      ? await cancelClassSession(key, admin.email ?? null)
+      : ({ ok: false, message: "Unknown action." } as const);
+  return NextResponse.json(res, { status: res.ok ? 200 : 400 });
 }

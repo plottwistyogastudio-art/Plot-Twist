@@ -126,6 +126,25 @@ export function notifyCancelled(userId: string, key: string, wasBooked: boolean,
   });
 }
 
+// The studio cancelled the whole class (for example too few people): tell the member, credit is always returned
+export function notifyClassCancelled(userId: string, key: string, wasBooked: boolean) {
+  if (!notifyEnabled()) return;
+  later(async () => {
+    const c = await classLine(key);
+    toMember(userId, "Your class is cancelled", (n) =>
+      `Hi ${n}, we're sorry, but ${c.name} on ${c.when} is cancelled.${wasBooked ? " Your class credit has been returned to your account, so you can book another class." : ""}\nBook another class: ${(process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "")}/schedule${SIGN}`,
+    );
+  });
+}
+
+export function notifyClassCancelledStudio(key: string, booked: number, waitlist: number) {
+  if (!notifyEnabled()) return;
+  later(async () => {
+    const c = await classLine(key);
+    toStudio(`Kelas dibatalkan: ${c.name}, ${c.when}\n${booked} member dibatalkan (kredit dikembalikan), ${waitlist} di waitlist. Semua sudah diberi tahu.`);
+  });
+}
+
 export function notifyPurchase(userId: string, pkgName: string, classes: number, amount: number) {
   if (!notifyEnabled()) return;
   later(async () => {

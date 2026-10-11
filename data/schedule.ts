@@ -13,6 +13,7 @@ export type ClassSession = {
   duration: string;
   level: string;
   teacher: string;
+  cancelled?: boolean; // cancelled for this date only (e.g. too few people)
 };
 
 // One class as stored (points at a teacher by id, so renaming a teacher updates every class)
@@ -32,6 +33,7 @@ export type SiteConfig = {
   closedDates: string[];                   // "YYYY-MM-DD": no classes that day
   extraClasses: Record<string, SlotRec[]>; // one-off classes on a date
   substitutes: Record<string, string>;     // "YYYY-MM-DD_HH:MM" -> teacher id (cover for one class)
+  cancelledClasses: string[];              // "YYYY-MM-DD_HH:MM": this one class is cancelled (stays visible, cannot be booked)
 };
 
 // Used until a schedule is saved in the admin page (or if the database is unreachable).
@@ -41,6 +43,7 @@ export const defaultConfig: SiteConfig = applyLaunchTimetable({
   closedDates: [],
   extraClasses: {},
   substitutes: {},
+  cancelledClasses: [],
 });
 
 // ---- Opening + how far ahead visitors can browse ----
@@ -57,7 +60,8 @@ export function getClasses(date: Date, cfg: SiteConfig = defaultConfig): ClassSe
   return slots
     .map(({ teacherId, ...c }) => {
       const id = cfg.substitutes[`${iso}_${c.time}`] || teacherId;
-      return { ...c, teacher: cfg.teachers.find((t) => t.id === id)?.name ?? TEACHER_TBA };
+      const cancelled = (cfg.cancelledClasses ?? []).includes(`${iso}_${c.time}`);
+      return { ...c, teacher: cfg.teachers.find((t) => t.id === id)?.name ?? TEACHER_TBA, ...(cancelled ? { cancelled: true } : {}) };
     })
     .sort((a, b) => a.time.localeCompare(b.time));
 }

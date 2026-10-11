@@ -20,7 +20,7 @@ export async function GET(req: Request) {
   const classes = list.map((c) => {
     const key = classKey(date, c.time);
     const mine = (rows ?? []).filter((r) => r.class_key === key);
-    return { key, ...c, booked: mine.filter((r) => r.status === "booked").length, waitlist: mine.filter((r) => r.status === "waitlist").length, capacity: CLASS_CAPACITY };
+    return { key, ...c, cancelled: !!c.cancelled, booked: mine.filter((r) => r.status === "booked").length, waitlist: mine.filter((r) => r.status === "waitlist").length, capacity: CLASS_CAPACITY };
   });
 
   // Sales this week (Mon-Sun, Jakarta dates)

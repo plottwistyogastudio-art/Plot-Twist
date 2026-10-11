@@ -3,9 +3,9 @@ import { firstPlot, packages } from "@/data/packages";
 import { supabaseAdmin } from "@/lib/supabase";
 
 import { CANCEL_HOURS, findClass as findClassIn, classStart } from "@/lib/booking-shared";
-import { getConfig } from "@/lib/config";
+import { getConfig, saveConfig } from "@/lib/config";
 import { qualifyReferral } from "@/lib/referral";
-import { notifyBooked, notifyCancelled, notifyPurchase } from "@/lib/notify";
+import { notifyBooked, notifyCancelled, notifyClassCancelled, notifyClassCancelledStudio, notifyPurchase } from "@/lib/notify";
 export { CANCEL_HOURS, classStart };
 
 // Looks the class up in the live (admin-edited) schedule
@@ -69,6 +69,7 @@ export async function bookClass(userId: string, key: string): Promise<BookResult
   const cls = await findClass(key);
   if (!cls) return { status: "error", message: "This class does not exist." };
   if (cls.iso < OPENING_DATE) return { status: "error", message: "Bookings are not open for this date." };
+  if (cls.session.cancelled) return { status: "error", message: "This class has been cancelled." };
   const start = classStart(key);
   if (start.getTime() < Date.now()) return { status: "error", message: "This class has already started." };
 
@@ -116,7 +117,7 @@ export async function bookClass(userId: string, key: string): Promise<BookResult
 }
 
 // Cancel a booking. Credit is returned only up to CANCEL_HOURS before class.
-export async function cancelBooking(userId: string, bookingId: string, opts: { refundAlways?: boolean } = {}) {
+export async function cancelBooking(userId: string, bookingId: string, opts: { refundAlways?: boolean; classCancelled?: boolean } = {}) {
   const db = supabaseAdmin();
   const { data: b } = await db.from("bookings").select("*").eq("id", bookingId).eq("user_id", userId).single();
   if (!b || b.status === "cancelled") return { ok: false, message: "Booking not found." };
@@ -140,9 +141,47 @@ export async function cancelBooking(userId: string, bookingId: string, opts: { r
     }
   }
   // A seat freed up (even a late cancel frees the seat, just no refund)
+  if (opts.classCancelled) {
+    notifyClassCancelled(userId, b.class_key, b.status === "booked");
+    return { ok: true, refunded: refund };
+  }
   if (b.status === "booked") await promoteWaitlist(b.class_key);
   notifyCancelled(userId, b.class_key, b.status === "booked", refund);
   return { ok: true, refunded: refund };
+}
+
+// Studio cancels ONE class on ONE date (the weekly timetable stays as it is).
+// The class stays visible as "Cancelled", nobody can book it, every booking is cancelled,
+// credits go back in full, and the waitlist is cleared. Everyone is notified.
+export async function cancelClassSession(key: string, adminEmail: string | null) {
+  const cfg = await getConfig();
+  const cls = findClassIn(key, cfg);
+  if (!cls) return { ok: false as const, message: "This class does not exist." };
+  if (cls.session.cancelled) return { ok: false as const, message: "This class is already cancelled." };
+
+  // 1. close it first so nobody can book while we cancel
+  const next = { ...cfg, cancelledClasses: [...(cfg.cancelledClasses ?? []), key].sort() };
+  const { error } = await saveConfig(next, adminEmail);
+  if (error) return { ok: false as const, message: "Could not cancel the class. Try again." };
+
+  // 2. cancel everyone (credit always returned, nobody is promoted from the waitlist)
+  const db = supabaseAdmin();
+  const { data: rows } = await db.from("bookings").select("id,user_id,status").eq("class_key", key).in("status", ["booked", "waitlist"]);
+  let booked = 0, waitlist = 0;
+  for (const r of rows ?? []) {
+    const res = await cancelBooking(r.user_id, r.id, { refundAlways: true, classCancelled: true });
+    if (res.ok) { if (r.status === "booked") booked++; else waitlist++; }
+  }
+  notifyClassCancelledStudio(key, booked, waitlist);
+  return { ok: true as const, booked, waitlist };
+}
+
+// Put a cancelled class back on sale (members who were cancelled are not re-booked)
+export async function reopenClassSession(key: string, adminEmail: string | null) {
+  const cfg = await getConfig();
+  if (!(cfg.cancelledClasses ?? []).includes(key)) return { ok: false as const, message: "This class is not cancelled." };
+  const { error } = await saveConfig({ ...cfg, cancelledClasses: cfg.cancelledClasses.filter((k) => k !== key) }, adminEmail);
+  return error ? { ok: false as const, message: "Could not reopen the class. Try again." } : { ok: true as const };
 }
 
 // Move the first person on the waitlist who still has a credit into the class.

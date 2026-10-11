@@ -28,7 +28,7 @@ export default async function HomePage() {
   for (let i = 0; i < 21 && upcoming.length < 4; i++, day = addDays(day, 1)) {
     const iso = toISO(day);
     for (const c of getClasses(day, config)) {
-      if (iso === todayISO && c.time <= nowTime) continue;
+      if (c.cancelled || (iso === todayISO && c.time <= nowTime)) continue;
       if (upcoming.length < 4) upcoming.push({ iso, c });
     }
   }

@@ -114,7 +114,12 @@ export function validateConfig(raw: unknown): Result {
     if (KEY.test(key) && typeof id === "string" && ids.has(id)) substitutes[key] = id;
   }
 
-  return { ok: true, config: { teachers, week, closedDates, extraClasses, substitutes } };
+  // single cancelled classes
+  const cancelledIn = Array.isArray(r.cancelledClasses) ? r.cancelledClasses : [];
+  if (cancelledIn.length > 600) return fail("Invalid cancelled classes.");
+  const cancelledClasses = [...new Set(cancelledIn.map((k) => str(k, 16)).filter((k) => KEY.test(k)))].sort();
+
+  return { ok: true, config: { teachers, week, closedDates, extraClasses, substitutes, cancelledClasses } };
 }
 
 // Current config (falls back to the built-in defaults if nothing is saved yet or the table is missing)

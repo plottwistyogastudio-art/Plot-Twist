@@ -6,7 +6,7 @@ import { authFetch } from "@/lib/supabase";
 import { addDays, formatFullDay, parseISO, toISO, today } from "@/lib/dates";
 import { formatIDR } from "@/data/packages";
 
-type Cls = { key: string; time: string; name: string; teacher: string; booked: number; waitlist: number; capacity: number };
+type Cls = { cancelled?: boolean; key: string; time: string; name: string; teacher: string; booked: number; waitlist: number; capacity: number };
 type Data = { classes: Cls[]; stats: { classes: number; booked: number; mats: number; waitlist: number; salesWeek: number; ordersWeek: number }; attention: { pendingOrders: number; expiringMembers: number } };
 
 export default function TodayView() {
@@ -50,7 +50,7 @@ export default function TodayView() {
                   <div className="admin-time">{c.time}</div>
                   <div className="grow"><b>{c.name}</b><div className="muted small">{c.teacher}</div></div>
                   <div>{c.booked} of {c.capacity}</div>
-                  <div>{c.booked >= c.capacity ? <span className="chip chip-dark">Full</span> : <span className="chip">{c.capacity - c.booked} spots</span>}</div>
+                  <div>{c.cancelled ? <span className="chip chip-dark">Cancelled</span> : c.booked >= c.capacity ? <span className="chip chip-dark">Full</span> : <span className="chip">{c.capacity - c.booked} spots</span>}</div>
                   <div>{c.waitlist > 0 ? <span className="chip chip-pink">{c.waitlist} waitlist</span> : null}</div>
                   <Link href={`/admin/classes/${encodeURIComponent(c.key)}`} className="btn btn-outline btn-sm">Roster</Link>
                 </div>

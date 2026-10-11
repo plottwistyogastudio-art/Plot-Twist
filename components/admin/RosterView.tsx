@@ -6,7 +6,7 @@ import { authFetch } from "@/lib/supabase";
 import { formatFullDay, parseISO } from "@/lib/dates";
 
 type Person = { mat: "studio" | "own" | null; id: string; userId: string; status: string; checkedIn: boolean; name: string; whatsapp: string; email: string; pack: string };
-type Data = { key: string; name: string; time: string; duration: string; teacher: string; iso: string; capacity: number; booked: Person[]; waitlist: Person[] };
+type Data = { cancelled?: boolean; key: string; name: string; time: string; duration: string; teacher: string; iso: string; capacity: number; booked: Person[]; waitlist: Person[] };
 type Member = { id: string; full_name: string | null; email: string | null; whatsapp: string | null; summary: string };
 
 export default function RosterView({ classKey }: { classKey: string }) {
@@ -27,6 +27,19 @@ export default function RosterView({ classKey }: { classKey: string }) {
   }
   const cancel = (p: Person) =>
     window.confirm(`Cancel ${p.name}? Their credit goes back.`) && act(`/api/admin/bookings/${p.id}`, { method: "DELETE" });
+  async function cancelClass() {
+    const n = d!.booked.length, w = d!.waitlist.length;
+    const ok = window.confirm(
+      `Cancel this class (${d!.name}, ${d!.time}) for this date only?\n\n` +
+      `${n} booked and ${w} on the waitlist will be cancelled and told by WhatsApp/email. Credits are returned in full. The weekly timetable is not changed.`,
+    );
+    if (ok) await act(`/api/admin/classes/${encodeURIComponent(classKey)}`, { method: "POST", body: JSON.stringify({ action: "cancel" }) });
+  }
+  async function reopenClass() {
+    if (window.confirm("Reopen this class for booking? People who were cancelled are not booked again automatically.")) {
+      await act(`/api/admin/classes/${encodeURIComponent(classKey)}`, { method: "POST", body: JSON.stringify({ action: "reopen" }) });
+    }
+  }
   const copyNumbers = async () => {
     await navigator.clipboard.writeText(d!.booked.map((p) => p.whatsapp).filter(Boolean).join(", "));
     setMsg("WhatsApp numbers copied.");
@@ -47,10 +60,16 @@ export default function RosterView({ classKey }: { classKey: string }) {
         <div className="admin-actions">
           <span className={`chip ${full ? "chip-dark" : ""}`}>{full ? "Full · " : ""}{d.booked.length} of {d.capacity}</span>
           <span className="chip chip-pink">Studio mats: {d.booked.filter((p) => p.mat === "studio").length}</span>
-          <button className="btn btn-outline btn-sm" onClick={() => setAdding(!adding)}>Add person</button>
+          {d.cancelled
+            ? <button className="btn btn-outline btn-sm" onClick={reopenClass}>Reopen class</button>
+            : <>
+                <button className="btn btn-outline btn-sm" onClick={() => setAdding(!adding)}>Add person</button>
+                <button className="btn btn-outline btn-sm" onClick={cancelClass}>Cancel this class</button>
+              </>}
           <button className="btn btn-primary btn-sm" onClick={copyNumbers}>Copy WhatsApp numbers</button>
         </div>
       </div>
+      {d.cancelled && <p className="flow-note" role="status"><b>This class is cancelled.</b> It shows as Cancelled on the website and cannot be booked.</p>}
       {msg && <p className="flow-note" role="status">{msg}</p>}
       {adding && <AddPerson classKey={classKey} onDone={(m) => { setMsg(m); setAdding(false); load(); }} />}
 
