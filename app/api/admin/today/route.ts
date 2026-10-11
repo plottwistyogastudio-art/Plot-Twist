@@ -15,12 +15,12 @@ export async function GET(req: Request) {
   const list = date < OPENING_DATE ? [] : getClasses(parseISO(date), await getConfig());
   const keys = list.map((c) => classKey(date, c.time));
   const { data: rows } = keys.length
-    ? await db.from("bookings").select("class_key,status").in("class_key", keys).in("status", ["booked", "waitlist"])
-    : { data: [] as { class_key: string; status: string }[] };
+    ? await db.from("bookings").select("class_key,status,mat").in("class_key", keys).in("status", ["booked", "waitlist"])
+    : { data: [] as { class_key: string; status: string; mat: string | null }[] };
   const classes = list.map((c) => {
     const key = classKey(date, c.time);
     const mine = (rows ?? []).filter((r) => r.class_key === key);
-    return { key, ...c, cancelled: !!c.cancelled, booked: mine.filter((r) => r.status === "booked").length, waitlist: mine.filter((r) => r.status === "waitlist").length, capacity: CLASS_CAPACITY };
+    return { key, ...c, cancelled: !!c.cancelled, booked: mine.filter((r) => r.status === "booked").length, studioMats: mine.filter((r) => r.status === "booked" && r.mat === "studio").length, matUnknown: mine.filter((r) => r.status === "booked" && !r.mat).length, waitlist: mine.filter((r) => r.status === "waitlist").length, capacity: CLASS_CAPACITY };
   });
 
   // Sales this week (Mon-Sun, Jakarta dates)
