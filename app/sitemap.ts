@@ -1,8 +1,9 @@
+import { siteUrl } from "@/lib/site";
 import { teacherCards } from "@/data/teachers";
 import type { MetadataRoute } from "next";
 import { getConfig } from "@/lib/config";
 
-const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const base = siteUrl();
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const teachers = teacherCards((await getConfig()).teachers).map((t) => `/teachers/${t.slug}`);

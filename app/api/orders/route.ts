@@ -1,3 +1,4 @@
+import { siteUrl } from "@/lib/site";
 import { NextResponse } from "next/server";
 import { getUser, supabaseAdmin } from "@/lib/supabase";
 import { findClass, findPackage, hasUsedFirstPlot } from "@/lib/booking";
@@ -26,10 +27,10 @@ export async function POST(req: Request) {
 
   // Live payment: ask DOKU for a QRIS payment page for this order
   if (dokuEnabled() && process.env.NEXT_PUBLIC_PAYMENT_MODE !== "simulate") {
-    const site = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
+    const site = siteUrl();
     const r = await createCheckout({
       orderId: data.id, amount: data.amount, email: user.email ?? undefined,
-      callbackUrl: site ? `${site}/account` : undefined,
+      callbackUrl: `${site}/account`,
     });
     if (!r.ok) {
       await supabaseAdmin().from("orders").update({ status: "expired" }).eq("id", data.id).eq("status", "pending");

@@ -1,3 +1,4 @@
+import { siteUrl } from "@/lib/site";
 import { after } from "next/server";
 import { CLASS_CAPACITY } from "@/data/schedule";
 import { formatFullDay, parseISO } from "@/lib/dates";
@@ -132,7 +133,7 @@ export function notifyClassCancelled(userId: string, key: string, wasBooked: boo
   later(async () => {
     const c = await classLine(key);
     toMember(userId, "Your class is cancelled", (n) =>
-      `Hi ${n}, we're sorry, but ${c.name} on ${c.when} is cancelled.${wasBooked ? " Your class credit has been returned to your account, so you can book another class." : ""}\nBook another class: ${(process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "")}/schedule${SIGN}`,
+      `Hi ${n}, we're sorry, but ${c.name} on ${c.when} is cancelled.${wasBooked ? " Your class credit has been returned to your account, so you can book another class." : ""}\nBook another class: ${siteUrl()}/schedule${SIGN}`,
     );
   });
 }
@@ -150,7 +151,7 @@ export function notifyPurchase(userId: string, pkgName: string, classes: number,
   later(async () => {
     const m = await member(userId);
     toStudio(`Pembelian lunas: ${m.name}\n${pkgName} (${classes} kelas), ${formatIDR(amount)}${m.whatsapp ? `\nWA: ${m.whatsapp}` : ""}`);
-    toMember(userId, "Payment confirmed", (n) => `Hi ${n}, thank you! Your payment of ${formatIDR(amount)} for ${pkgName} is confirmed. ${classes} ${classes === 1 ? "class is" : "classes are"} now in your account.\nBook your class: ${(process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "")}/schedule${SIGN}`);
+    toMember(userId, "Payment confirmed", (n) => `Hi ${n}, thank you! Your payment of ${formatIDR(amount)} for ${pkgName} is confirmed. ${classes} ${classes === 1 ? "class is" : "classes are"} now in your account.\nBook your class: ${siteUrl()}/schedule${SIGN}`);
   });
 }
 

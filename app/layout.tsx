@@ -1,3 +1,4 @@
+import { siteUrl as siteUrlFn } from "@/lib/site";
 import type { Metadata } from "next";
 import { DM_Sans, Fraunces } from "next/font/google";
 import Header from "@/components/Header";
@@ -18,7 +19,7 @@ const body = DM_Sans({
   variable: "--font-body",
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const siteUrl = siteUrlFn();
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
