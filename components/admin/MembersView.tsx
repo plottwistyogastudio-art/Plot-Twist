@@ -53,6 +53,10 @@ export default function MembersView() {
   );
 }
 
+// One-tap reasons for adjusting credits (you can still type your own)
+const REMOVE_REASONS = ["Ajak temannya untuk join dengan credit ini", "Koreksi credit yang salah"];
+const ADD_REASONS = ["Kompensasi kelas dibatalkan studio", "Koreksi credit yang salah"];
+
 function MemberDetail({ id }: { id: string }) {
   const [d, setD] = useState<Detail | null>(null);
   const [n, setN] = useState(1);
@@ -110,6 +114,13 @@ function MemberDetail({ id }: { id: string }) {
           <div className="admin-row">
             <input type="number" min={1} max={50} value={n} onChange={(e) => setN(Math.max(1, Number(e.target.value)))} aria-label="Number of credits" className="admin-num" />
             <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason (required)" aria-label="Reason" className="grow admin-input" />
+          </div>
+          <div className="chip-row chip-row-sm" role="group" aria-label="Quick reasons">
+            {[...REMOVE_REASONS.map((r) => ({ r, kind: "Remove" })), ...ADD_REASONS.map((r) => ({ r, kind: "Add" }))].map(({ r, kind }) => (
+              <button key={kind + r} type="button" className={`chip ${reason === r ? "is-on" : ""}`} onClick={() => setReason(r)} title={`${kind}: ${r}`}>
+                {kind === "Remove" ? "− " : "+ "}{r}
+              </button>
+            ))}
           </div>
           <div className="admin-row">
             <button className="btn btn-primary btn-sm" onClick={() => apply(1)}>Add</button>
