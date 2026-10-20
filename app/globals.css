@@ -692,3 +692,21 @@ select.admin-input { padding-right: 8px; }
 /* Class cancelled by the studio: stays on the schedule, greyed out */
 .class-row.is-cancelled > div:not(.class-book) { opacity: .5; }
 .class-row.is-cancelled .class-name, .class-row.is-cancelled .class-time { text-decoration: line-through; }
+
+/* ---- Coach fees (Admin) ---- */
+.fee-month { min-width: 150px; text-align: center; font-size: 18px; }
+.fee-basis { margin-top: 0; }
+.fee-coach { gap: 10px; }
+.fee-name { font-family: var(--font-display), Georgia, serif; font-size: 24px; font-weight: 400; }
+.fee-total { font-family: var(--font-display), Georgia, serif; font-size: 28px; }
+.fee-rate { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; padding: 10px 0 4px; }
+.fee-rate label { display: flex; flex-direction: column; gap: 4px; }
+.fee-rate .admin-input { width: 150px; }
+.fee-toggle { align-self: flex-start; background: none; border: 0; padding: 0; cursor: pointer; font: inherit; }
+.fee-date { width: 70px; }
+.fee-num { width: 100px; text-align: right; }
+.fee-amt { width: 130px; text-align: right; font-weight: 600; }
+@media (max-width: 720px) {
+  .fee-row { gap: 10px; }
+  .fee-num, .fee-amt { width: auto; text-align: left; }
+}
