@@ -704,7 +704,10 @@ select.admin-input { padding-right: 8px; }
 .fee-rate .admin-input { width: 150px; }
 .fee-toggle { align-self: flex-start; background: none; border: 0; padding: 0; cursor: pointer; font: inherit; }
 .fee-date { width: 70px; }
-.fee-num { width: 100px; text-align: right; }
+.fee-num { width: 150px; text-align: right; }
+.fee-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.fee-mode { margin-top: 0; width: 100%; }
+.fee-dropin { padding: 0; }
 .fee-amt { width: 130px; text-align: right; font-weight: 600; }
 @media (max-width: 720px) {
   .fee-row { gap: 10px; }

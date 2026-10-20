@@ -1,41 +1,73 @@
 // Server only: monthly coach fee report.
-// Fee rules and manual overrides live in site_config (key "coach_fees"); attendance comes from bookings.
+// Fee rules, manual headcounts and manual fees live in site_config (key "coach_fees"); attendance comes from bookings.
 import { supabaseAdmin } from "@/lib/supabase";
 import { getConfig } from "@/lib/config";
 import { OPENING_DATE } from "@/data/schedule";
+import { packages } from "@/data/packages";
 import { WEEKDAYS } from "@/lib/dates";
 
-export type Rate = { base: number; perHead: number };
+export type Rate = {
+  mode: "flat" | "percent";
+  base: number;     // flat: fee per class
+  perHead: number;  // flat: extra per person
+  percent: number;  // percent: % of the drop-in price, for each person
+};
 export type FeeSettings = {
-  rates: Record<string, Rate>;       // teacher id -> fee per class + extra per person
-  overrides: Record<string, number>; // "YYYY-MM-DD_HH:MM" -> fee for that one class (replaces the rule)
+  dropIn: number;                    // drop-in price that percentages are taken from
+  rates: Record<string, Rate>;       // teacher id -> how this coach is paid
+  headcounts: Record<string, number>; // "YYYY-MM-DD_HH:MM" -> number of people (when the app's count is wrong, e.g. manual bookings)
+  overrides: Record<string, number>;  // "YYYY-MM-DD_HH:MM" -> fee for that one class (replaces the rule)
 };
 export type Basis = "checked" | "booked";
 
 const KEY = /^\d{4}-\d{2}-\d{2}_([01]\d|2[0-3]):[0-5]\d$/;
 const MAX = 100_000_000;
 export const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
+export const DEFAULT_DROP_IN = packages.find((p) => p.id === "drop-in")?.price ?? 120000;
+export const NO_RATE: Rate = { mode: "flat", base: 0, perHead: 0, percent: 0 };
 
 export function money(v: unknown): number | null {
   if (v === "" || v === null || v === undefined) return null;
   const n = Math.round(Number(v));
   return Number.isFinite(n) && n >= 0 && n <= MAX ? n : null;
 }
+export function percentage(v: unknown): number | null {
+  if (v === "" || v === null || v === undefined) return null;
+  const n = Math.round(Number(v) * 10) / 10;
+  return Number.isFinite(n) && n >= 0 && n <= 100 ? n : null;
+}
+export function count(v: unknown): number | null {
+  if (v === "" || v === null || v === undefined) return null;
+  const n = Math.round(Number(v));
+  return Number.isFinite(n) && n >= 0 && n <= 200 ? n : null;
+}
+
+export function cleanRate(v: Partial<Rate> | undefined): Rate {
+  return {
+    mode: v?.mode === "percent" ? "percent" : "flat",
+    base: money(v?.base) ?? 0,
+    perHead: money(v?.perHead) ?? 0,
+    percent: percentage(v?.percent) ?? 0,
+  };
+}
 
 function clean(raw: unknown): FeeSettings {
   const r = (raw && typeof raw === "object" ? raw : {}) as Partial<FeeSettings>;
   const rates: Record<string, Rate> = {};
   for (const [id, v] of Object.entries(r.rates ?? {}).slice(0, 80)) {
-    const base = money((v as Rate)?.base) ?? 0;
-    const perHead = money((v as Rate)?.perHead) ?? 0;
-    if (id && id.length <= 40) rates[id] = { base, perHead };
+    if (id && id.length <= 40) rates[id] = cleanRate(v as Partial<Rate>);
   }
   const overrides: Record<string, number> = {};
   for (const [key, v] of Object.entries(r.overrides ?? {}).slice(0, 3000)) {
     const n = money(v);
     if (KEY.test(key) && n !== null) overrides[key] = n;
   }
-  return { rates, overrides };
+  const headcounts: Record<string, number> = {};
+  for (const [key, v] of Object.entries(r.headcounts ?? {}).slice(0, 3000)) {
+    const n = count(v);
+    if (KEY.test(key) && n !== null) headcounts[key] = n;
+  }
+  return { dropIn: money(r.dropIn) || DEFAULT_DROP_IN, rates, headcounts, overrides };
 }
 
 export async function getFeeSettings(): Promise<FeeSettings> {
@@ -43,7 +75,7 @@ export async function getFeeSettings(): Promise<FeeSettings> {
     const { data } = await supabaseAdmin().from("site_config").select("value").eq("key", "coach_fees").maybeSingle();
     return clean(data?.value);
   } catch {
-    return { rates: {}, overrides: {} };
+    return clean(null);
   }
 }
 
@@ -55,20 +87,24 @@ export async function saveFeeSettings(s: FeeSettings, email: string | null) {
 
 export type FeeClass = {
   key: string; date: string; weekday: string; time: string; name: string; type: string;
-  booked: number; attended: number; fee: number; manual: boolean; substitute: boolean;
+  booked: number;     // spots booked in the app
+  attended: number;   // people ticked off in the roster
+  people: number;     // the number the fee is based on
+  peopleEdited: boolean;
+  fee: number; manual: boolean; substitute: boolean;
 };
 export type CoachFees = {
   id: string; name: string; rate: Rate;
   classes: FeeClass[];
-  totals: { classes: number; booked: number; attended: number; fee: number };
+  totals: { classes: number; booked: number; people: number; fee: number };
 };
 export type FeeReport = {
-  month: string; basis: Basis;
+  month: string; basis: Basis; dropIn: number;
   coaches: CoachFees[];
-  totals: { classes: number; booked: number; attended: number; fee: number; coaches: number };
+  totals: { classes: number; booked: number; people: number; fee: number; coaches: number };
   cancelled: number;   // classes cancelled this month (not paid)
   upcoming: number;    // classes later this month that have not started yet (not counted)
-  noCheckins: number;  // past classes with bookings but nobody checked in
+  noCheckins: number;  // past classes with bookings but nobody checked in (and no number typed in)
 };
 
 const nextMonth = (ym: string) => {
@@ -89,6 +125,12 @@ async function monthBookings(ym: string) {
     if (data.length < 1000) break;
   }
   return out;
+}
+
+export function feeFor(rate: Rate, people: number, dropIn: number) {
+  return rate.mode === "percent"
+    ? Math.round((rate.percent / 100) * dropIn * people)
+    : rate.base + rate.perHead * people;
 }
 
 export async function buildReport(ym: string, basis: Basis): Promise<FeeReport> {
@@ -120,13 +162,14 @@ export async function buildReport(ym: string, basis: Basis): Promise<FeeReport> 
       const teacherId = sub || s.teacherId || "";
       const b = booked.get(key) ?? 0;
       const a = attended.get(key) ?? 0;
-      if (b > 0 && a === 0) noCheckins++;
-      const rate = settings.rates[teacherId] ?? { base: 0, perHead: 0 };
-      const headcount = basis === "booked" ? b : a;
+      const edited = key in settings.headcounts;
+      if (!edited && b > 0 && a === 0) noCheckins++;
+      const people = edited ? settings.headcounts[key] : basis === "booked" ? b : a;
+      const rate = settings.rates[teacherId] ?? NO_RATE;
       const manual = key in settings.overrides;
-      const fee = manual ? settings.overrides[key] : rate.base + rate.perHead * headcount;
+      const fee = manual ? settings.overrides[key] : feeFor(rate, people, settings.dropIn);
       const list = byTeacher.get(teacherId) ?? [];
-      list.push({ key, date: iso, weekday: WEEKDAYS[dow], time: s.time, name: s.name, type: s.type, booked: b, attended: a, fee, manual, substitute: !!sub && sub !== s.teacherId });
+      list.push({ key, date: iso, weekday: WEEKDAYS[dow], time: s.time, name: s.name, type: s.type, booked: b, attended: a, people, peopleEdited: edited, fee, manual, substitute: !!sub && sub !== s.teacherId });
       byTeacher.set(teacherId, list);
     }
   }
@@ -134,24 +177,23 @@ export async function buildReport(ym: string, basis: Basis): Promise<FeeReport> 
   const sum = (list: FeeClass[]) => ({
     classes: list.length,
     booked: list.reduce((n, c) => n + c.booked, 0),
-    attended: list.reduce((n, c) => n + c.attended, 0),
+    people: list.reduce((n, c) => n + c.people, 0),
     fee: list.reduce((n, c) => n + c.fee, 0),
   });
 
-  const coaches: CoachFees[] = cfg.teachers
-    .map((t) => {
-      const classes = (byTeacher.get(t.id) ?? []).sort((a, b) => a.key.localeCompare(b.key));
-      return { id: t.id, name: t.name, rate: settings.rates[t.id] ?? { base: 0, perHead: 0 }, classes, totals: sum(classes) };
-    });
+  const coaches: CoachFees[] = cfg.teachers.map((t) => {
+    const classes = (byTeacher.get(t.id) ?? []).sort((a, b) => a.key.localeCompare(b.key));
+    return { id: t.id, name: t.name, rate: settings.rates[t.id] ?? NO_RATE, classes, totals: sum(classes) };
+  });
   const orphan = byTeacher.get("");
   if (orphan?.length) {
-    coaches.push({ id: "", name: "No teacher assigned", rate: { base: 0, perHead: 0 }, classes: orphan.sort((a, b) => a.key.localeCompare(b.key)), totals: sum(orphan) });
+    coaches.push({ id: "", name: "No teacher assigned", rate: NO_RATE, classes: orphan.sort((a, b) => a.key.localeCompare(b.key)), totals: sum(orphan) });
   }
   coaches.sort((a, b) => b.totals.classes - a.totals.classes || a.name.localeCompare(b.name));
 
   const all = coaches.flatMap((c) => c.classes);
   return {
-    month: ym, basis, coaches,
+    month: ym, basis, dropIn: settings.dropIn, coaches,
     totals: { ...sum(all), coaches: coaches.filter((c) => c.totals.classes > 0).length },
     cancelled, upcoming, noCheckins,
   };
