@@ -128,6 +128,7 @@ async function monthBookings(ym: string) {
 }
 
 export function feeFor(rate: Rate, people: number, dropIn: number) {
+  if (people <= 0) return 0; // nobody came: no fee, even if the coach has a fee per class
   return rate.mode === "percent"
     ? Math.round((rate.percent / 100) * dropIn * people)
     : rate.base + rate.perHead * people;

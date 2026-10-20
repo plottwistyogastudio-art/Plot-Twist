@@ -128,7 +128,7 @@ export default function CoachFeesView() {
         <button className={`chip chip-type ${basis === "booked" ? "is-on" : ""}`} onClick={() => setBasis("booked")}>Booked</button>
       </div>
       <p className="muted small">
-        {basis === "checked" ? "People you ticked off in the class roster." : "Everyone who booked a spot (waitlist not counted)."} If the count is off, for example because of manual bookings, use “Edit people” on that class.
+        {basis === "checked" ? "People you ticked off in the class roster." : "Everyone who booked a spot (waitlist not counted)."} If the count is off, for example because of manual bookings, use “Edit people” on that class. A class with 0 people has no fee, unless you set one with “Edit fee”.
       </p>
 
       <div className="fee-rate fee-dropin">
