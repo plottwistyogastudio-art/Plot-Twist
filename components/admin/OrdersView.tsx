@@ -9,10 +9,11 @@ type Order = { id: string; member: string; pkg: string; classKey: string | null;
 export default function OrdersView() {
   const [orders, setOrders] = useState<Order[] | null>(null);
   const [msg, setMsg] = useState("");
+  const [showExpired, setShowExpired] = useState(false);
   const load = useCallback(async () => {
-    const r = await authFetch("/api/admin/orders");
+    const r = await authFetch(`/api/admin/orders${showExpired ? "?expired=1" : ""}`);
     if (r.ok) setOrders((await r.json()).orders);
-  }, []);
+  }, [showExpired]);
   useEffect(() => { load(); }, [load]);
 
   async function markPaid(o: Order) {
@@ -25,7 +26,12 @@ export default function OrdersView() {
 
   return (
     <>
-      <div className="admin-head"><h1 className="admin-title">Orders</h1></div>
+      <div className="admin-head">
+        <h1 className="admin-title">Orders</h1>
+        <div className="admin-actions">
+          <button className="btn btn-outline btn-sm" onClick={() => setShowExpired(!showExpired)}>{showExpired ? "Hide expired" : "Show expired"}</button>
+        </div>
+      </div>
       {msg && <p className="flow-note" role="status">{msg}</p>}
       <div className="admin-panel">
         {!orders && <p className="muted">Loading…</p>}

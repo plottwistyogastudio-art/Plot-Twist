@@ -5,6 +5,7 @@ import { findClass, findPackage, hasUsedFirstPlot } from "@/lib/booking";
 import { firstPlotOpen } from "@/data/packages";
 import { priceFor } from "@/lib/referral";
 import { createCheckout, dokuEnabled, invoiceFor } from "@/lib/doku";
+import { closeOlderPending, closeStaleOrders } from "@/lib/orders";
 
 export async function POST(req: Request) {
   const user = await getUser(req);
@@ -18,6 +19,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "First Plot has ended." }, { status: 409 });
   if (pkg.oncePerPerson && (await hasUsedFirstPlot(user.id)))
     return NextResponse.json({ error: "First Plot can only be bought once per person." }, { status: 409 });
+
+  // Close unpaid QRIS orders first: old ones, and this member's earlier open order for the same package
+  await closeStaleOrders();
+  await closeOlderPending(user.id, pkg.id);
 
   const { amount, discount } = await priceFor(user.id, pkg);
   const { data, error } = await supabaseAdmin().from("orders")

@@ -215,20 +215,26 @@ export async function fulfillOrder(orderId: string) {
   if (!order) return { ok: false as const, message: "Order not found." };
   if (order.status === "paid") return { ok: true as const, already: true };
 
-  // Mark paid first, only if still pending: makes this safe to call twice
+  // Mark paid first, only if still open: makes this safe to call twice.
+  // An order that was closed as "expired" can still be paid (a very late payment, or you mark it paid by hand), so it counts as open.
   const { data: claimed } = await db.from("orders")
-    .update({ status: "paid", paid_at: new Date().toISOString() }).eq("id", orderId).eq("status", "pending").select("id").single();
+    .update({ status: "paid", paid_at: new Date().toISOString() }).eq("id", orderId).in("status", ["pending", "expired"]).select("id").single();
   if (!claimed) return { ok: true as const, already: true };
 
   const pkg = findPackage(order.package_id);
   if (!pkg) return { ok: false as const, message: "Unknown package." };
   const rule = VALIDITY[pkg.id] ?? { days: 30, from: "purchase" as const };
-  const { error } = await db.from("credit_packs").insert({
+  const pack = {
     user_id: order.user_id, package_id: pkg.id, total: pkg.classes, remaining: pkg.classes,
     expires_at: rule.from === "purchase" ? addDays(rule.days) : null,
     valid_days: rule.from === "first_booking" ? rule.days : null,
-    is_first_plot: !!pkg.oncePerPerson,
-  });
+  };
+  let { error } = await db.from("credit_packs").insert({ ...pack, is_first_plot: !!pkg.oncePerPerson });
+  // The member already has a First Plot (two orders were paid): they paid, so they still get their credits,
+  // just without the one-per-person flag.
+  if (error && pkg.oncePerPerson && error.code === "23505") {
+    ({ error } = await db.from("credit_packs").insert({ ...pack, is_first_plot: false }));
+  }
   if (error) return { ok: false as const, message: "Could not add credits." };
 
   notifyPurchase(order.user_id, pkg.name, pkg.classes, order.amount);

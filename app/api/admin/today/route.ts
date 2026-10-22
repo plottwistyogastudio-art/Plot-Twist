@@ -5,12 +5,14 @@ import { getClasses, CLASS_CAPACITY, OPENING_DATE } from "@/data/schedule";
 import { parseISO, startOfWeek, toISO, addDays } from "@/lib/dates";
 import { classKey } from "@/lib/booking";
 import { getConfig } from "@/lib/config";
+import { closeStaleOrders } from "@/lib/orders";
 
 export async function GET(req: Request) {
   if (!(await requireAdmin(req))) return forbidden();
   const date = new URL(req.url).searchParams.get("date") ?? "";
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return NextResponse.json({ error: "Bad date" }, { status: 400 });
   const db = supabaseAdmin();
+  await closeStaleOrders();
 
   const list = date < OPENING_DATE ? [] : getClasses(parseISO(date), await getConfig());
   const keys = list.map((c) => classKey(date, c.time));

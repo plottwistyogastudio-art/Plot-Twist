@@ -10,7 +10,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     db.from("profiles").select("*").eq("id", id).single(),
     db.from("credit_packs").select("*").eq("user_id", id).order("created_at", { ascending: false }),
     db.from("bookings").select("*").eq("user_id", id).order("created_at", { ascending: false }).limit(40),
-    db.from("orders").select("*").eq("user_id", id).order("created_at", { ascending: false }).limit(20),
+    db.from("orders").select("*").eq("user_id", id).neq("status", "expired").order("created_at", { ascending: false }).limit(20),
     db.from("credit_adjustments").select("*").eq("user_id", id).order("created_at", { ascending: false }).limit(20),
   ]);
   if (!profile) return NextResponse.json({ error: "Not found" }, { status: 404 });
