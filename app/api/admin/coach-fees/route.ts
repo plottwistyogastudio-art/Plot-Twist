@@ -33,9 +33,11 @@ export async function POST(req: Request) {
     const base = money(body.base ?? 0);
     const perHead = money(body.perHead ?? 0);
     const percent = percentage(body.percent ?? 0);
+    const threshold = count(body.threshold ?? 6);
     if (base === null || perHead === null) return bad("Enter the amounts as whole numbers in IDR (0 is fine).");
     if (percent === null) return bad("The percentage must be between 0 and 100.");
-    settings.rates[teacherId] = cleanRate({ mode: body.mode, base, perHead, percent });
+    if (threshold === null) return bad("Enter the number of people as a whole number (0 to 200).");
+    settings.rates[teacherId] = cleanRate({ mode: body.mode, base, perHead, threshold, percent });
   } else if (body?.action === "dropin") {
     const amount = money(body.amount);
     if (!amount) return bad("Enter the drop-in price in IDR.");

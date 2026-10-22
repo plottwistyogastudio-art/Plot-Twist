@@ -5,7 +5,7 @@ import { authFetch } from "@/lib/supabase";
 import { formatIDR } from "@/data/packages";
 import { MONTHS } from "@/lib/dates";
 
-type Rate = { mode: "flat" | "percent"; base: number; perHead: number; percent: number };
+type Rate = { mode: "flat" | "percent"; base: number; perHead: number; threshold: number; percent: number };
 type FeeClass = {
   key: string; date: string; weekday: string; time: string; name: string; type: string;
   booked: number; attended: number; people: number; peopleEdited: boolean;
@@ -21,7 +21,7 @@ type Report = {
   totals: { classes: number; booked: number; people: number; fee: number; coaches: number };
   cancelled: number; upcoming: number; noCheckins: number;
 };
-type Draft = { mode: "flat" | "percent"; base: string; perHead: string; percent: string };
+type Draft = { mode: "flat" | "percent"; base: string; perHead: string; threshold: string; percent: string };
 
 const FIRST_MONTH = "2026-10"; // studio opened 15 Oct 2026
 const jakartaMonth = () => new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 7);
@@ -31,9 +31,9 @@ function shift(ym: string, by: number) {
 }
 const label = (ym: string) => `${MONTHS[Number(ym.slice(5)) - 1]} ${ym.slice(0, 4)}`;
 const shortDate = (iso: string) => `${Number(iso.slice(8))} ${MONTHS[Number(iso.slice(5, 7)) - 1].slice(0, 3)}`;
-const toDraft = (r: Rate): Draft => ({ mode: r.mode, base: String(r.base), perHead: String(r.perHead), percent: String(r.percent) });
+const toDraft = (r: Rate): Draft => ({ mode: r.mode, base: String(r.base), perHead: String(r.perHead), threshold: String(r.threshold), percent: String(r.percent) });
 const rateText = (r: Rate) =>
-  r.mode === "percent" ? `${r.percent}% of drop-in per person` : `${formatIDR(r.base)} per class + ${formatIDR(r.perHead)} per person`;
+  r.mode === "percent" ? `${r.percent}% of drop-in per person` : `${formatIDR(r.base)} per class + ${formatIDR(r.perHead)} for each person above ${r.threshold}`;
 
 export default function CoachFeesView() {
   const [month, setMonth] = useState(jakartaMonth());
@@ -64,7 +64,7 @@ export default function CoachFeesView() {
   const saveRate = (c: Coach) => {
     const d = drafts[c.id];
     if (!d) return;
-    post({ action: "rate", teacherId: c.id, mode: d.mode, base: d.base || "0", perHead: d.perHead || "0", percent: d.percent || "0" }, `Rate saved for ${c.name}.`);
+    post({ action: "rate", teacherId: c.id, mode: d.mode, base: d.base || "0", perHead: d.perHead || "0", threshold: d.threshold || "0", percent: d.percent || "0" }, `Rate saved for ${c.name}.`);
   };
   const setDraft = (id: string, patch: Partial<Draft>) => setDrafts({ ...drafts, [id]: { ...drafts[id], ...patch } });
 
@@ -188,9 +188,17 @@ export default function CoachFeesView() {
                         <label className="small muted">Fee per class (IDR)
                           <input className="admin-input" inputMode="numeric" value={d.base} onChange={(e) => setDraft(c.id, { base: e.target.value.replace(/\D/g, "") })} />
                         </label>
-                        <label className="small muted">+ per person (IDR)
+                        <label className="small muted">Extra per person (IDR)
                           <input className="admin-input" inputMode="numeric" value={d.perHead} onChange={(e) => setDraft(c.id, { perHead: e.target.value.replace(/\D/g, "") })} />
                         </label>
+                        <label className="small muted">…for each person above
+                          <input className="admin-input fee-small" inputMode="numeric" value={d.threshold} onChange={(e) => setDraft(c.id, { threshold: e.target.value.replace(/\D/g, "") })} />
+                        </label>
+                        {Number(d.perHead) > 0 && (
+                          <span className="small muted fee-example">
+                            {Number(d.threshold) + 2} people = {formatIDR(Number(d.base || 0) + 2 * Number(d.perHead))}
+                          </span>
+                        )}
                       </>
                     ) : (
                       <label className="small muted">Percent of drop-in, per person

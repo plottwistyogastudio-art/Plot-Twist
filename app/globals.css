@@ -713,3 +713,5 @@ select.admin-input { padding-right: 8px; }
   .fee-row { gap: 10px; }
   .fee-num, .fee-amt { width: auto; text-align: left; }
 }
+.fee-rate .admin-input.fee-small { width: 90px; }
+.fee-example { align-self: center; }

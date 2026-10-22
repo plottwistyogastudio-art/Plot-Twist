@@ -8,9 +8,10 @@ import { WEEKDAYS } from "@/lib/dates";
 
 export type Rate = {
   mode: "flat" | "percent";
-  base: number;     // flat: fee per class
-  perHead: number;  // flat: extra per person
-  percent: number;  // percent: % of the drop-in price, for each person
+  base: number;      // flat: fee per class
+  perHead: number;   // flat: extra for each person above the threshold
+  threshold: number; // flat: the extra only starts once the class has MORE than this many people
+  percent: number;   // percent: % of the drop-in price, for each person
 };
 export type FeeSettings = {
   dropIn: number;                    // drop-in price that percentages are taken from
@@ -24,7 +25,8 @@ const KEY = /^\d{4}-\d{2}-\d{2}_([01]\d|2[0-3]):[0-5]\d$/;
 const MAX = 100_000_000;
 export const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 export const DEFAULT_DROP_IN = packages.find((p) => p.id === "drop-in")?.price ?? 120000;
-export const NO_RATE: Rate = { mode: "flat", base: 0, perHead: 0, percent: 0 };
+export const DEFAULT_THRESHOLD = 6;
+export const NO_RATE: Rate = { mode: "flat", base: 0, perHead: 0, threshold: DEFAULT_THRESHOLD, percent: 0 };
 
 export function money(v: unknown): number | null {
   if (v === "" || v === null || v === undefined) return null;
@@ -47,6 +49,7 @@ export function cleanRate(v: Partial<Rate> | undefined): Rate {
     mode: v?.mode === "percent" ? "percent" : "flat",
     base: money(v?.base) ?? 0,
     perHead: money(v?.perHead) ?? 0,
+    threshold: count(v?.threshold) ?? DEFAULT_THRESHOLD,
     percent: percentage(v?.percent) ?? 0,
   };
 }
@@ -131,7 +134,7 @@ export function feeFor(rate: Rate, people: number, dropIn: number) {
   if (people <= 0) return 0; // nobody came: no fee, even if the coach has a fee per class
   return rate.mode === "percent"
     ? Math.round((rate.percent / 100) * dropIn * people)
-    : rate.base + rate.perHead * people;
+    : rate.base + rate.perHead * Math.max(0, people - rate.threshold);
 }
 
 export async function buildReport(ym: string, basis: Basis): Promise<FeeReport> {
