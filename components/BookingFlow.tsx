@@ -31,6 +31,9 @@ export default function BookingFlow({ classKey, packageId }: { classKey?: string
   const [orderAmount, setOrderAmount] = useState<number | null>(null);
   const [refInput, setRefInput] = useState("");
   const [refMsg, setRefMsg] = useState("");
+  const [promoInput, setPromoInput] = useState("");
+  const [promo, setPromo] = useState<{ code: string; packageId: string; amount: number } | null>(null);
+  const [promoMsg, setPromoMsg] = useState("");
 
   const loadMe = useCallback(async () => {
     const { data } = await supabaseBrowser().auth.getSession();
@@ -58,7 +61,23 @@ export default function BookingFlow({ classKey, packageId }: { classKey?: string
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [me?.referral?.canApplyCode]);
 
-  const priceOf = (p: Pkg) => (me?.referral?.discountEligible && (REFERRAL_ON_FIRST_PLOT || !p.oncePerPerson) ? referralPrice(p.price) : p.price);
+  // Check a promo code for the chosen package (the server calculates the real price again when ordering)
+  async function checkPromo(raw: string, packageId: string | null) {
+    const code = raw.trim();
+    if (!code) { setPromo(null); setPromoMsg(""); return; }
+    if (!packageId) { setPromo(null); setPromoMsg("Choose a package first, then apply your code."); return; }
+    const r = await authFetch("/api/promo/check", { method: "POST", body: JSON.stringify({ code, packageId }) });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok && j.ok && j.applied) { setPromo({ code: j.code, packageId, amount: j.amount }); setPromoMsg(`${j.message} You save ${formatIDR(j.discount)}.`); }
+    else { setPromo(null); setPromoMsg(j.message ?? j.error ?? "Could not check the code."); }
+  }
+  // Switching package: check the code again for the new one
+  useEffect(() => {
+    if (promoInput.trim() && chosen) checkPromo(promoInput, chosen);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chosen]);
+
+  const priceOf = (p: Pkg) => (promo && promo.packageId === p.id ? promo.amount : me?.referral?.discountEligible && (REFERRAL_ON_FIRST_PLOT || !p.oncePerPerson) ? referralPrice(p.price) : p.price);
 
   useEffect(() => {
     (async () => {
@@ -106,7 +125,7 @@ export default function BookingFlow({ classKey, packageId }: { classKey?: string
   async function startPayment() {
     if (!chosen) return;
     setBusy(true); setError("");
-    const r = await authFetch("/api/orders", { method: "POST", body: JSON.stringify({ packageId: chosen, classKey }) });
+    const r = await authFetch("/api/orders", { method: "POST", body: JSON.stringify({ packageId: chosen, classKey, promoCode: promo && promo.packageId === chosen ? promo.code : undefined }) });
     const j = await r.json();
     setBusy(false);
     if (!r.ok) { setError(j.error ?? "Could not start the payment."); return; }
@@ -238,7 +257,7 @@ export default function BookingFlow({ classKey, packageId }: { classKey?: string
         <h1 className="h1 h1-page">Checkout</h1>
         <div className="flow-card">
           <div className="flow-row"><div><div className="card-title">{pkg.name}</div><div className="muted small">{pkg.classes} {pkg.classes === 1 ? "class" : "classes"} · valid {pkg.validity}</div></div><div className="price-sm">{formatIDR(orderAmount ?? pkg.price)}</div></div>
-          {orderAmount !== null && orderAmount < pkg.price && <div className="muted small flow-sep">Referral discount applied: <s>{formatIDR(pkg.price)}</s></div>}
+          {orderAmount !== null && orderAmount < pkg.price && <div className="muted small flow-sep">Discount applied: <s>{formatIDR(pkg.price)}</s></div>}
           {cls && <div className="muted small flow-sep"><b>Booked after payment:</b><br />{cls.name} · {formatFullDay(parseISO(cls.iso))} · {cls.time}</div>}
         </div>
         <div className="flow-card center-col">
@@ -298,7 +317,7 @@ export default function BookingFlow({ classKey, packageId }: { classKey?: string
               <span className="card-title">{p.name}</span>
               <span className="muted small">{p.classes} {p.classes === 1 ? "class" : "classes"} · valid {p.validity}{p.classes > 1 ? ` · ${formatIDR(perClass(p))} per class` : ""}</span>
               {p.regularPrice && <span className="muted small">Regular <s>{formatIDR(p.regularPrice)}</s></span>}
-              {priceOf(p) < p.price && <span className="muted small">Referral discount <s>{formatIDR(p.price)}</s></span>}
+              {priceOf(p) < p.price && <span className="muted small">{promo && promo.packageId === p.id ? `Promo ${promo.code}` : "Referral discount"} <s>{formatIDR(p.price)}</s></span>}
             </span>
             <span className="price-sm">{formatIDR(priceOf(p))}</span>
           </label>
@@ -315,6 +334,14 @@ export default function BookingFlow({ classKey, packageId }: { classKey?: string
           {refMsg && <p className="flow-note" role="status">{refMsg}</p>}
         </details>
       )}
+      <details className="ref-box promo-box" open={!!promo}>
+        <summary>Have a promo code?</summary>
+        <div className="promo-row">
+          <input aria-label="Promo code" placeholder="PROMO CODE" value={promoInput} onChange={(e) => { setPromoInput(e.target.value); setPromo(null); setPromoMsg(""); }} />
+          <button type="button" className="btn btn-outline btn-sm" onClick={() => checkPromo(promoInput, chosen)}>Apply</button>
+        </div>
+        {promoMsg && <p className="flow-note" role="status">{promoMsg}</p>}
+      </details>
       {error && <p className="flow-error" role="alert">{error}</p>}
       <button className="btn btn-primary btn-block" onClick={startPayment} disabled={!selected || busy}>
         {selected ? `Continue · ${formatIDR(priceOf(selected))}` : "Choose a package"}

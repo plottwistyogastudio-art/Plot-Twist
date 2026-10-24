@@ -4,13 +4,14 @@ import { getUser, supabaseAdmin } from "@/lib/supabase";
 import { findClass, findPackage, hasUsedFirstPlot } from "@/lib/booking";
 import { firstPlotOpen } from "@/data/packages";
 import { priceFor } from "@/lib/referral";
+import { evaluatePromo } from "@/lib/promo";
 import { createCheckout, dokuEnabled, invoiceFor } from "@/lib/doku";
 import { closeOlderPending, closeStaleOrders } from "@/lib/orders";
 
 export async function POST(req: Request) {
   const user = await getUser(req);
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
-  const { packageId, classKey } = await req.json();
+  const { packageId, classKey, promoCode } = await req.json();
 
   const pkg = findPackage(String(packageId));
   if (!pkg) return NextResponse.json({ error: "Unknown package." }, { status: 400 });
@@ -24,9 +25,23 @@ export async function POST(req: Request) {
   await closeStaleOrders();
   await closeOlderPending(user.id, pkg.id);
 
-  const { amount, discount } = await priceFor(user.id, pkg);
+  // Price: referral discount, or a promo code if it gives more (they never combine)
+  let amount: number, discount: number, appliedCode: string | null = null;
+  if (promoCode) {
+    const r = await evaluatePromo(user.id, String(promoCode), pkg);
+    if (!r.ok) return NextResponse.json({ error: r.message }, { status: 409 });
+    ({ amount, discount } = r);
+    appliedCode = r.code;
+    if (appliedCode) {
+      // this member's earlier open orders with the same code no longer hold a use
+      await supabaseAdmin().from("orders").update({ status: "expired" })
+        .eq("user_id", user.id).eq("promo_code", appliedCode).eq("status", "pending");
+    }
+  } else {
+    ({ amount, discount } = await priceFor(user.id, pkg));
+  }
   const { data, error } = await supabaseAdmin().from("orders")
-    .insert({ user_id: user.id, package_id: pkg.id, class_key: classKey ?? null, amount, discount })
+    .insert({ user_id: user.id, package_id: pkg.id, class_key: classKey ?? null, amount, discount, ...(appliedCode ? { promo_code: appliedCode } : {}) })
     .select("id, amount, status").single();
   if (error) return NextResponse.json({ error: "Could not create the order." }, { status: 500 });
 

@@ -95,3 +95,21 @@ alter table orders add column if not exists discount int not null default 0;    
 
 -- ---- WhatsApp reminders ----
 alter table bookings add column if not exists reminded_at timestamptz;
+
+-- ---- Promo codes ----
+create table if not exists promo_codes (
+  code text primary key,                                   -- always UPPERCASE
+  kind text not null check (kind in ('percent','amount')), -- percent off, or a fixed IDR amount off
+  value int not null,
+  package_ids text[] not null default '{}',                -- packages the code works on
+  expires_at timestamptz,
+  max_uses int,                                            -- null = unlimited
+  one_per_person boolean not null default true,
+  new_members_only boolean not null default false,
+  active boolean not null default true,
+  note text,
+  created_at timestamptz not null default now()
+);
+alter table promo_codes enable row level security;
+alter table orders add column if not exists promo_code text;
+create index if not exists orders_promo_code_idx on orders (promo_code) where promo_code is not null;

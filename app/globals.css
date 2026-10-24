@@ -715,3 +715,15 @@ select.admin-input { padding-right: 8px; }
 }
 .fee-rate .admin-input.fee-small { width: 90px; }
 .fee-example { align-self: center; }
+
+/* ---- Promo codes ---- */
+.promo-form { gap: 14px; }
+.promo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.promo-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.promo-checks { display: flex; gap: 8px 18px; flex-wrap: wrap; align-items: center; }
+.promo-check { display: flex; gap: 6px; align-items: center; font-size: 15px; }
+.promo-card { gap: 8px; }
+.promo-code { font-family: var(--font-display), Georgia, serif; font-size: 22px; font-weight: 400; letter-spacing: 0.04em; }
+.promo-box { margin-top: 4px; }
+.promo-row { display: flex; gap: 10px; margin-top: 8px; }
+.promo-row input { flex: 1; min-width: 0; height: 44px; padding: 0 14px; border: 1.5px solid var(--line-strong); border-radius: 12px; background: var(--bg); font: inherit; color: var(--ink); text-transform: uppercase; }

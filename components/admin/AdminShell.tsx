@@ -11,6 +11,7 @@ const items = [
   { href: "/admin/members", label: "Members" },
   { href: "/admin/orders", label: "Orders" },
   { href: "/admin/fees", label: "Coach fees" },
+  { href: "/admin/promos", label: "Promo codes" },
 ];
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
