@@ -2,7 +2,7 @@ import { toISO } from "@/lib/dates";
 import { defaultTeachers, type TeacherRec } from "@/data/teachers";
 import { applyLaunchTimetable } from "@/data/timetable";
 
-export const CLASS_TYPES = ["Vinyasa", "Slow Flow", "Hatha", "Hatha Vinyasa", "Yin", "Prenatal", "Mat Pilates"] as const;
+export const CLASS_TYPES = ["Vinyasa", "Slow Flow", "Hatha", "Hatha Vinyasa", "Power Yoga", "Yin", "Prenatal", "Mat Pilates"] as const;
 export type ClassTypeName = (typeof CLASS_TYPES)[number];
 
 // One class as shown on the website (teacher name already filled in)
