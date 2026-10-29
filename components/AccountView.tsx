@@ -13,7 +13,7 @@ import { defaultConfig, type SiteConfig } from "@/data/schedule";
 type Booking = { id: string; class_key: string; status: "booked" | "waitlist"; mat: "studio" | "own" | null };
 type Pack = { id: string; package_id: string; remaining: number; total: number; expires_at: string | null };
 type Referral = { hasPaid?: boolean; code: string | null; qualified: number; rewards: number; untilNext: number; referredBy: boolean };
-type Profile = { full_name?: string | null; whatsapp?: string | null; marketing_opt_in?: boolean | null };
+type Profile = { full_name?: string | null; whatsapp?: string | null; birthdate?: string | null; marketing_opt_in?: boolean | null };
 type Me = { email: string; credits: number; packs: Pack[]; bookings: Booking[]; profile: Profile | null; referral?: Referral | null };
 type History = {
   packs: (Pack & { created_at: string })[];
@@ -200,6 +200,7 @@ export default function AccountView() {
 function ProfileForm({ me, onSaved }: { me: Me; onSaved: () => void }) {
   const [name, setName] = useState(me.profile?.full_name ?? "");
   const [wa, setWa] = useState(me.profile?.whatsapp ?? "");
+  const [birth, setBirth] = useState(me.profile?.birthdate ?? "");
   const [marketing, setMarketing] = useState(!!me.profile?.marketing_opt_in);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
@@ -207,7 +208,7 @@ function ProfileForm({ me, onSaved }: { me: Me; onSaved: () => void }) {
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true); setNote(null);
-    const r = await authFetch("/api/me", { method: "PATCH", body: JSON.stringify({ fullName: name, whatsapp: wa, marketing }) });
+    const r = await authFetch("/api/me", { method: "PATCH", body: JSON.stringify({ fullName: name, whatsapp: wa, birthdate: birth, marketing }) });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
     if (r.ok) { setNote({ ok: true, text: "Saved." }); onSaved(); }
@@ -220,6 +221,7 @@ function ProfileForm({ me, onSaved }: { me: Me; onSaved: () => void }) {
       <label className="field">Full name<input required value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" /></label>
       <label className="field">WhatsApp number<input required type="tel" placeholder="+62 ..." value={wa} onChange={(e) => setWa(e.target.value)} autoComplete="tel" /></label>
       <p className="muted small acc-hint">Class reminders and updates are sent to this number.</p>
+      <label className="field">Birthdate (optional)<input type="date" value={birth} max={new Date().toISOString().slice(0, 10)} min="1900-01-01" onChange={(e) => setBirth(e.target.value)} autoComplete="bday" /></label>
       <label className="field">Email<input value={me.email} disabled readOnly /></label>
       <p className="muted small acc-hint">To change your email, please message the studio.</p>
       <label className="check"><input type="checkbox" checked={marketing} onChange={(e) => setMarketing(e.target.checked)} />

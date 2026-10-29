@@ -55,8 +55,17 @@ export async function PATCH(req: Request) {
   const whatsapp = String(body.whatsapp ?? "").replace(/[\s().-]/g, "");
   if (fullName.length < 2 || fullName.length > 120) return NextResponse.json({ error: "Please enter your full name." }, { status: 400 });
   if (!/^\+?\d{8,15}$/.test(whatsapp)) return NextResponse.json({ error: "Enter a valid WhatsApp number, for example +62 812 3456 7890." }, { status: 400 });
+  // Birthdate is optional: empty clears it
+  const rawBirth = String(body.birthdate ?? "").trim();
+  let birthdate: string | null = null;
+  if (rawBirth) {
+    const t = Date.parse(`${rawBirth}T00:00:00Z`);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(rawBirth) || Number.isNaN(t) || new Date(t).toISOString().slice(0, 10) !== rawBirth
+      || t > Date.now() || rawBirth < "1900-01-01") return NextResponse.json({ error: "Please enter a valid birthdate." }, { status: 400 });
+    birthdate = rawBirth;
+  }
   const { data, error } = await supabaseAdmin().from("profiles")
-    .update({ full_name: fullName, whatsapp, marketing_opt_in: body.marketing === true })
+    .update({ full_name: fullName, whatsapp, birthdate, marketing_opt_in: body.marketing === true })
     .eq("id", user.id).select("id").maybeSingle();
   if (error) return NextResponse.json({ error: "Could not save. Please try again." }, { status: 500 });
   if (!data) return NextResponse.json({ error: "Please finish creating your account first." }, { status: 404 });

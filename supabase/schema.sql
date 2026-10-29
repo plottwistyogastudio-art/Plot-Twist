@@ -113,3 +113,6 @@ create table if not exists promo_codes (
 alter table promo_codes enable row level security;
 alter table orders add column if not exists promo_code text;
 create index if not exists orders_promo_code_idx on orders (promo_code) where promo_code is not null;
+
+-- ---- Member birthdate (optional, set by the member in My account) ----
+alter table profiles add column if not exists birthdate date;

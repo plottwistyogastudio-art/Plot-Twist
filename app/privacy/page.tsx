@@ -29,6 +29,7 @@ export default function PrivacyPage() {
       <h2 className="h3">What we collect</h2>
       <ul>
         <li><strong>Account details:</strong> your name, WhatsApp number, email address and password. Your password is stored in scrambled form and is not readable by us.</li>
+        <li><strong>Birthdate (optional):</strong> only if you choose to add it in My account. You can change or remove it at any time.</li>
         <li><strong>Booking and purchase history:</strong> the classes you book, cancel or wait for, the packages you buy, your remaining credits and when they expire.</li>
         <li><strong>Payment status:</strong> whether an order was paid. Payments are handled by our payment provider. We never see or store your bank, e-wallet or card details.</li>
         <li><strong>Your consent:</strong> when you agreed to this policy, and which version.</li>
@@ -38,6 +39,7 @@ export default function PrivacyPage() {
       <ul>
         <li>To create and manage your account, bookings, waitlist spots and class credits.</li>
         <li>To contact you about your classes by email or WhatsApp: confirmations, waitlist updates, schedule changes and reminders.</li>
+        <li>If you add your birthdate: to send you a birthday greeting from the studio. We use it for nothing else.</li>
         <li>To keep records of payments, as required for our accounting and by law.</li>
         <li>To keep the studio safe and running smoothly, for example knowing who is on the mat list.</li>
       </ul>

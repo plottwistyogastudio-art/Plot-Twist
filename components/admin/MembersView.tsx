@@ -9,7 +9,7 @@ import { packLabel } from "@/lib/booking-shared";
 type Member = { id: string; full_name: string | null; email: string | null; whatsapp: string | null; summary: string };
 type Pack = { id: string; package_id: string; total: number; remaining: number; expires_at: string | null; valid_days: number | null };
 type Detail = {
-  profile: { id: string; full_name: string | null; email: string | null; whatsapp: string | null; created_at: string; marketing_opt_in: boolean };
+  profile: { id: string; full_name: string | null; email: string | null; whatsapp: string | null; birthdate: string | null; created_at: string; marketing_opt_in: boolean };
   packs: Pack[];
   bookings: { id: string; class_key: string; status: string; created_at: string }[];
   orders: { id: string; package_id: string; amount: number; status: string; created_at: string }[];
@@ -93,7 +93,7 @@ function MemberDetail({ id }: { id: string }) {
       <div className="admin-head">
         <div>
           <h1 className="admin-title">{d.profile.full_name ?? d.profile.email}</h1>
-          <div className="muted">{d.profile.email} · {d.profile.whatsapp} · Joined {fmtDate(d.profile.created_at)}{d.profile.marketing_opt_in ? " · OK to send news" : ""}</div>
+          <div className="muted">{d.profile.email} · {d.profile.whatsapp}{d.profile.birthdate ? ` · Born ${fmtDate(d.profile.birthdate)}` : ""} · Joined {fmtDate(d.profile.created_at)}{d.profile.marketing_opt_in ? " · OK to send news" : ""}</div>
         </div>
         {wa && <a className="btn btn-outline btn-sm" href={`https://wa.me/${wa}`} target="_blank" rel="noopener">Message on WhatsApp</a>}
       </div>

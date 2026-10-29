@@ -1,6 +1,6 @@
 // Bump these dates whenever the policies change in a way people should re-accept.
-export const PRIVACY_VERSION = "2026-10-05";
-export const PRIVACY_UPDATED = "5 October 2026";
+export const PRIVACY_VERSION = "2026-10-29";
+export const PRIVACY_UPDATED = "29 October 2026";
 export const TERMS_VERSION = "2026-10-05";
 export const TERMS_UPDATED = "5 October 2026";
 
