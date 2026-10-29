@@ -53,7 +53,7 @@ export default function Header() {
           {nav.map((item) => link(item.href, item.label))}
           {signedIn === true && (
             <>
-              {link("/account", "My bookings")}
+              {link("/account", "My account")}
               <button type="button" className="nav-link nav-plain" onClick={logout}>Log out</button>
             </>
           )}

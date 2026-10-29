@@ -380,9 +380,12 @@ export function AuthForm({ onDone, startMode = "signup" }: { onDone: () => void;
 
   async function forgot() {
     setError(""); setInfo("");
-    if (!f.email) { setError("Type your email above first."); return; }
-    const { error } = await supabaseBrowser().auth.resetPasswordForEmail(f.email, { redirectTo: `${window.location.origin}/reset-password` });
-    if (error) setError(error.message);
+    const email = f.email.trim();
+    if (!email) { setError("Type your email above first."); return; }
+    const { error } = await supabaseBrowser().auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
+    if (error) setError(error.status === 429 || /rate limit|security purposes/i.test(error.message)
+      ? "Too many reset emails were requested. Please wait a few minutes and try again, or message the studio on WhatsApp."
+      : "We could not send the reset email. Please try again, or message the studio on WhatsApp.");
     else setInfo("If this email has an account, we sent a link to reset the password. Check your inbox and spam folder.");
   }
 

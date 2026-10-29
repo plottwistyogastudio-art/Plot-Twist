@@ -46,6 +46,23 @@ export async function POST(req: Request) {
   return NextResponse.json({ ok: true });
 }
 
+// Update the member's own details (name, WhatsApp number, studio news opt-in)
+export async function PATCH(req: Request) {
+  const user = await getUser(req);
+  if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  const body = await req.json().catch(() => ({}));
+  const fullName = String(body.fullName ?? "").trim().replace(/\s+/g, " ");
+  const whatsapp = String(body.whatsapp ?? "").replace(/[\s().-]/g, "");
+  if (fullName.length < 2 || fullName.length > 120) return NextResponse.json({ error: "Please enter your full name." }, { status: 400 });
+  if (!/^\+?\d{8,15}$/.test(whatsapp)) return NextResponse.json({ error: "Enter a valid WhatsApp number, for example +62 812 3456 7890." }, { status: 400 });
+  const { data, error } = await supabaseAdmin().from("profiles")
+    .update({ full_name: fullName, whatsapp, marketing_opt_in: body.marketing === true })
+    .eq("id", user.id).select("id").maybeSingle();
+  if (error) return NextResponse.json({ error: "Could not save. Please try again." }, { status: 500 });
+  if (!data) return NextResponse.json({ error: "Please finish creating your account first." }, { status: 404 });
+  return NextResponse.json({ ok: true });
+}
+
 // Delete the account. Future bookings are cancelled first so seats free up and waitlists move.
 // Payment records stay (without a name) for accounting, as the Privacy Policy says.
 export async function DELETE(req: Request) {

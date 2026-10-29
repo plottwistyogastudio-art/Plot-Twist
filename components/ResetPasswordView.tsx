@@ -14,9 +14,12 @@ export default function ResetPasswordView() {
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [badLink, setBadLink] = useState(false);
 
   useEffect(() => {
     const sb = supabaseBrowser();
+    // Supabase puts a problem with the link (for example an expired one) in the address
+    if (/error_code=|error=access_denied/.test(window.location.hash + window.location.search)) setBadLink(true);
     const { data: sub } = sb.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") setReady(true);
     });
@@ -47,7 +50,7 @@ export default function ResetPasswordView() {
       </div>
     );
 
-  if (checked && !ready)
+  if (badLink || (checked && !ready))
     return (
       <div className="flow">
         <h1 className="h1 h1-page">This link has expired</h1>
