@@ -88,9 +88,38 @@ export default function CoachFeesView() {
     post({ action: "override", key: c.key, amount: t === "" ? null : t.replace(/[^\d]/g, "") }, t === "" ? "Back to the coach's rate." : "Fee changed for this class.");
   }
 
+  const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+  function saveCsv(lines: string[], filename: string) {
+    const blob = new Blob(["﻿" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  // One coach, one month: a statement the coach can be given or kept for payment records
+  function downloadCoach(c: Coach) {
+    if (!data) return;
+    const slug = c.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "coach";
+    const lines = [
+      [`Coach fees: ${c.name}`].map(esc).join(","),
+      [`Month: ${label(data.month)}`].map(esc).join(","),
+      [`Rate: ${rateText(c.rate)}`].map(esc).join(","),
+      [`People counted by: ${data.basis === "checked" ? "checked in" : "booked"}`].map(esc).join(","),
+      "",
+      ["Date", "Day", "Time", "Class", "Type", "Booked", "People (fee)", "Fee (IDR)", "Note"].map(esc).join(","),
+    ];
+    for (const k of c.classes) {
+      const note = [k.peopleEdited ? "people edited" : "", k.manual ? "manual fee" : "", k.substitute ? "cover" : ""].filter(Boolean).join(", ");
+      lines.push([k.date, k.weekday, k.time, k.name, k.type, k.booked, k.people, k.fee, note].map(esc).join(","));
+    }
+    lines.push(["TOTAL", "", "", `${c.totals.classes} classes`, "", c.totals.booked, c.totals.people, c.totals.fee, ""].map(esc).join(","));
+    saveCsv(lines, `coach-fees-${slug}-${data.month}.csv`);
+  }
+
   function downloadCsv() {
     if (!data) return;
-    const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
     const lines = [["Coach", "Date", "Day", "Time", "Class", "Booked", "People (fee)", "Fee (IDR)", "Note"].map(esc).join(",")];
     for (const c of data.coaches) {
       for (const k of c.classes) {
@@ -100,12 +129,7 @@ export default function CoachFeesView() {
       if (c.classes.length) lines.push([`${c.name} TOTAL`, "", "", "", `${c.totals.classes} classes`, c.totals.booked, c.totals.people, c.totals.fee, rateText(c.rate)].map(esc).join(","));
     }
     lines.push(["ALL COACHES TOTAL", "", "", "", `${data.totals.classes} classes`, data.totals.booked, data.totals.people, data.totals.fee, ""].map(esc).join(","));
-    const blob = new Blob(["﻿" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `coach-fees-${data.month}.csv`;
-    a.click();
-    URL.revokeObjectURL(a.href);
+    saveCsv(lines, `coach-fees-${data.month}.csv`);
   }
 
   return (
@@ -116,7 +140,7 @@ export default function CoachFeesView() {
           <button className="btn btn-outline btn-sm" disabled={month <= FIRST_MONTH} onClick={() => setMonth(shift(month, -1))} aria-label="Previous month">←</button>
           <b className="fee-month">{label(month)}</b>
           <button className="btn btn-outline btn-sm" disabled={month >= jakartaMonth()} onClick={() => setMonth(shift(month, 1))} aria-label="Next month">→</button>
-          <button className="btn btn-outline btn-sm" onClick={downloadCsv} disabled={!data}>Download CSV</button>
+          <button className="btn btn-outline btn-sm" onClick={downloadCsv} disabled={!data}>Download all coaches</button>
         </div>
       </div>
 
@@ -212,7 +236,10 @@ export default function CoachFeesView() {
                 )}
 
                 {c.classes.length > 0 && (
-                  <button className="text-link fee-toggle" onClick={() => setOpen({ ...open, [c.id]: !show })}>{show ? "Hide classes" : "Show classes"}</button>
+                  <div className="fee-actions">
+                    <button className="text-link fee-toggle" onClick={() => setOpen({ ...open, [c.id]: !show })}>{show ? "Hide classes" : "Show classes"}</button>
+                    <button className="btn btn-outline btn-sm" onClick={() => downloadCoach(c)}>Download {label(data.month)} (CSV)</button>
+                  </div>
                 )}
 
                 {show && c.classes.map((k) => (

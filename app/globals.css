@@ -703,6 +703,7 @@ select.admin-input { padding-right: 8px; }
 .fee-rate label { display: flex; flex-direction: column; gap: 4px; }
 .fee-rate .admin-input { width: 150px; }
 .fee-toggle { align-self: flex-start; background: none; border: 0; padding: 0; cursor: pointer; font: inherit; }
+.fee-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .fee-date { width: 70px; }
 .fee-num { width: 150px; text-align: right; }
 .fee-btns { display: flex; gap: 8px; flex-wrap: wrap; }
