@@ -738,3 +738,11 @@ select.admin-input { padding-right: 8px; }
 .acc-form { gap: 12px; }
 .acc-form .field input:disabled { opacity: 0.6; }
 .acc-hint { margin: -6px 0 0; }
+
+/* WhatsApp guests in the class roster */
+.guest-chip { margin-left: 8px; font-size: 11px; padding: 2px 8px; background: #fdf1d6; border-color: #e8c98a; }
+.guest-form { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; max-width: 420px; }
+.guest-form select { height: 44px; padding: 0 10px; border: 1.5px solid var(--line-strong); border-radius: 10px; background: #fdfbf4; font: inherit; color: var(--ink); }
+.guest-form .btn { align-self: flex-start; }
+.check-row { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; line-height: 1.4; }
+.check-row input { margin-top: 3px; }

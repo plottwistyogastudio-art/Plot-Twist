@@ -116,3 +116,10 @@ create index if not exists orders_promo_code_idx on orders (promo_code) where pr
 
 -- ---- Member birthdate (optional, set by the member in My account) ----
 alter table profiles add column if not exists birthdate date;
+
+-- ---- WhatsApp guests: people who book by WhatsApp and have no account (added by hand in Admin -> class roster) ----
+alter table bookings alter column user_id drop not null;
+alter table bookings add column if not exists guest_name text;
+alter table bookings add column if not exists guest_whatsapp text;   -- stored as 628xxxxxxxxxx
+create unique index if not exists one_active_guest_booking_per_class
+  on bookings (guest_whatsapp, class_key) where guest_whatsapp is not null and status in ('booked','waitlist');

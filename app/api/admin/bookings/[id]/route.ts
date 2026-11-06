@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin, forbidden } from "@/lib/admin";
 import { supabaseAdmin } from "@/lib/supabase";
-import { cancelBooking, promoteBooking } from "@/lib/booking";
+import { cancelBooking, cancelGuestBooking, promoteBooking } from "@/lib/booking";
 
 // PATCH { action: "checkin" | "uncheckin" | "promote" }
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -25,6 +25,11 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   const { id } = await params;
   const { data: b } = await supabaseAdmin().from("bookings").select("user_id").eq("id", id).single();
   if (!b) return NextResponse.json({ ok: false, message: "Not found" }, { status: 404 });
+  // WhatsApp guest (no account): nothing to refund
+  if (!b.user_id) {
+    const g = await cancelGuestBooking(id);
+    return NextResponse.json(g, { status: g.ok ? 200 : 400 });
+  }
   const r = await cancelBooking(b.user_id, id, { refundAlways: true });
   return NextResponse.json(r, { status: r.ok ? 200 : 400 });
 }

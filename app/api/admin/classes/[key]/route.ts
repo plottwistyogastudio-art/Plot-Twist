@@ -12,7 +12,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ key: str
   if (!cls) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const db = supabaseAdmin();
   const { data: bookings } = await db.from("bookings").select("*").eq("class_key", key).in("status", ["booked", "waitlist"]).order("created_at");
-  const ids = [...new Set((bookings ?? []).map((b) => b.user_id))];
+  const ids = [...new Set((bookings ?? []).map((b) => b.user_id).filter(Boolean))];
   const [{ data: profiles }, { data: packs }] = await Promise.all([
     ids.length ? db.from("profiles").select("id,full_name,whatsapp,email").in("id", ids) : { data: [] },
     ids.length ? db.from("credit_packs").select("id,user_id,package_id,remaining").in("id", (bookings ?? []).map((b) => b.pack_id).filter(Boolean)) : { data: [] },
@@ -20,10 +20,17 @@ export async function GET(req: Request, { params }: { params: Promise<{ key: str
   // credit left per member, for the waitlist
   const { data: allPacks } = ids.length ? await db.from("credit_packs").select("user_id,package_id,remaining").in("user_id", ids).gt("remaining", 0) : { data: [] };
   const people = (bookings ?? []).map((b) => {
+    // WhatsApp guest: no account, no credit
+    if (!b.user_id) {
+      return {
+        id: b.id, userId: null, status: b.status, mat: b.mat ?? null, checkedIn: !!b.checked_in_at, guest: true,
+        name: b.guest_name || "Guest", whatsapp: b.guest_whatsapp ?? "", email: "", pack: "WhatsApp guest",
+      };
+    }
     const p = profiles?.find((x) => x.id === b.user_id);
     const pack = packs?.find((x) => x.id === b.pack_id) ?? allPacks?.find((x) => x.user_id === b.user_id);
     return {
-      id: b.id, userId: b.user_id, status: b.status, mat: b.mat ?? null, checkedIn: !!b.checked_in_at,
+      id: b.id, userId: b.user_id, status: b.status, mat: b.mat ?? null, checkedIn: !!b.checked_in_at, guest: false,
       name: p?.full_name || p?.email || "Member", whatsapp: p?.whatsapp ?? "", email: p?.email ?? "",
       pack: pack ? `${packLabel(pack.package_id)} · ${pack.remaining} left` : "No credit",
     };

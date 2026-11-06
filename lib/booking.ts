@@ -5,7 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { CANCEL_HOURS, findClass as findClassIn, classStart } from "@/lib/booking-shared";
 import { getConfig, saveConfig } from "@/lib/config";
 import { qualifyReferral } from "@/lib/referral";
-import { notifyBooked, notifyCancelled, notifyClassCancelled, notifyClassCancelledStudio, notifyPurchase } from "@/lib/notify";
+import { notifyBooked, notifyCancelled, notifyClassCancelled, notifyClassCancelledStudio, notifyPurchase, normalisePhone, notifyGuestBooked, notifyGuestCancelled, notifyClassCancelledGuest } from "@/lib/notify";
 export { CANCEL_HOURS, classStart };
 
 // Looks the class up in the live (admin-edited) schedule
@@ -166,9 +166,16 @@ export async function cancelClassSession(key: string, adminEmail: string | null)
 
   // 2. cancel everyone (credit always returned, nobody is promoted from the waitlist)
   const db = supabaseAdmin();
-  const { data: rows } = await db.from("bookings").select("id,user_id,status").eq("class_key", key).in("status", ["booked", "waitlist"]);
+  const { data: rows } = await db.from("bookings").select("id,user_id,status,guest_name,guest_whatsapp").eq("class_key", key).in("status", ["booked", "waitlist"]);
   let booked = 0, waitlist = 0;
   for (const r of rows ?? []) {
+    if (!r.user_id) {
+      // WhatsApp guest: no account and no credit, just cancel and tell them
+      await db.from("bookings").update({ status: "cancelled" }).eq("id", r.id);
+      if (r.guest_whatsapp) notifyClassCancelledGuest(r.guest_name ?? "", r.guest_whatsapp, key);
+      if (r.status === "booked") booked++; else waitlist++;
+      continue;
+    }
     const res = await cancelBooking(r.user_id, r.id, { refundAlways: true, classCancelled: true });
     if (res.ok) { if (r.status === "booked") booked++; else waitlist++; }
   }
@@ -182,6 +189,57 @@ export async function reopenClassSession(key: string, adminEmail: string | null)
   if (!(cfg.cancelledClasses ?? []).includes(key)) return { ok: false as const, message: "This class is not cancelled." };
   const { error } = await saveConfig({ ...cfg, cancelledClasses: cfg.cancelledClasses.filter((k) => k !== key) }, adminEmail);
   return error ? { ok: false as const, message: "Could not reopen the class. Try again." } : { ok: true as const };
+}
+
+// Admin adds someone who booked by WhatsApp and has no account: just a name and a number, no credit.
+// They take a mat like everyone else (so capacity, check-in and coach fees all count them).
+export async function bookGuest(
+  rawName: string, rawPhone: string, key: string,
+  opts: { mat?: "studio" | "own" | null; notify?: boolean } = {},
+): Promise<{ ok: true; phone: string } | { ok: false; message: string }> {
+  const db = supabaseAdmin();
+  const name = rawName.replace(/\s+/g, " ").trim();
+  if (name.length < 2 || name.length > 80) return { ok: false, message: "Please type the person's name." };
+  const phone = normalisePhone(rawPhone);
+  if (!phone || phone.endsWith("@g.us") || phone.length < 9 || phone.length > 15) return { ok: false, message: "That WhatsApp number does not look right. Use for example 0812 3456 7890." };
+
+  const cls = await findClass(key);
+  if (!cls) return { ok: false, message: "This class does not exist." };
+  if (cls.iso < OPENING_DATE) return { ok: false, message: "Bookings are not open for this date." };
+  if (cls.session.cancelled) return { ok: false, message: "This class has been cancelled." };
+  if (classStart(key).getTime() < Date.now()) return { ok: false, message: "This class has already started." };
+
+  const { data: existing } = await db.from("bookings").select("id").eq("guest_whatsapp", phone).eq("class_key", key).in("status", ["booked", "waitlist"]).limit(1);
+  if (existing?.length) return { ok: false, message: "This number is already in this class." };
+  if ((await spotsLeft(key)) === 0) return { ok: false, message: "The class is full." };
+
+  const { data, error } = await db.from("bookings")
+    .insert({ user_id: null, guest_name: name, guest_whatsapp: phone, class_key: key, status: "booked", mat: opts.mat ?? null })
+    .select("id").single();
+  if (error || !data) {
+    const missing = /guest_|user_id|null value/i.test(error?.message ?? "");
+    return { ok: false, message: missing ? "The database is not ready for WhatsApp guests yet. Run the new SQL at the bottom of supabase/schema.sql in Supabase." : "Could not add this person. Try again." };
+  }
+
+  // Same last-spot check as members: whoever is beyond the capacity (by booking order) is released
+  const { data: order } = await db.from("bookings").select("id").eq("class_key", key).eq("status", "booked").order("created_at").order("id");
+  if ((order ?? []).findIndex((r) => r.id === data.id) >= CLASS_CAPACITY) {
+    await db.from("bookings").update({ status: "cancelled" }).eq("id", data.id);
+    return { ok: false, message: "The class just became full." };
+  }
+  if (opts.notify) notifyGuestBooked(name, phone, key);
+  return { ok: true, phone };
+}
+
+// Admin removes a WhatsApp guest from a class. No credit is involved; the seat is freed for the waitlist.
+export async function cancelGuestBooking(bookingId: string, opts: { notify?: boolean } = {}) {
+  const db = supabaseAdmin();
+  const { data: b } = await db.from("bookings").select("*").eq("id", bookingId).is("user_id", null).single();
+  if (!b || b.status === "cancelled") return { ok: false, message: "Booking not found." };
+  await db.from("bookings").update({ status: "cancelled" }).eq("id", bookingId);
+  if (b.status === "booked") await promoteWaitlist(b.class_key);
+  if (opts.notify !== false && b.guest_whatsapp) notifyGuestCancelled(b.guest_name ?? "", b.guest_whatsapp, b.class_key);
+  return { ok: true, refunded: false };
 }
 
 // Move the first person on the waitlist who still has a credit into the class.

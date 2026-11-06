@@ -146,6 +146,42 @@ export function notifyClassCancelledStudio(key: string, booked: number, waitlist
   });
 }
 
+// ---- WhatsApp guests (no account): messages go to the number the studio typed in ----
+export const guestMessagesOn = () => waEnabled() && process.env.WA_MEMBER_MESSAGES !== "off";
+const firstName = (name: string) => name.trim().split(/\s+/)[0] || "there";
+
+export function notifyGuestBooked(name: string, phone: string, key: string) {
+  if (!guestMessagesOn()) return;
+  later(async () => {
+    const c = await classLine(key);
+    await send(phone, `Hi ${firstName(name)}, you're booked for ${c.name} on ${c.when}${c.teacher ? ` with ${c.teacher}` : ""}.\nPlease arrive 10 minutes early. If you can't make it, just reply to this message at least ${CANCEL_HOURS} hours before class.${SIGN}`);
+  });
+}
+
+export function notifyGuestCancelled(name: string, phone: string, key: string) {
+  if (!guestMessagesOn()) return;
+  later(async () => {
+    const c = await classLine(key);
+    await send(phone, `Hi ${firstName(name)}, your booking for ${c.name} on ${c.when} is cancelled. Reply to this message if you'd like to book another class.${SIGN}`);
+  });
+}
+
+export function notifyClassCancelledGuest(name: string, phone: string, key: string) {
+  if (!guestMessagesOn()) return;
+  later(async () => {
+    const c = await classLine(key);
+    await send(phone, `Hi ${firstName(name)}, we're sorry, but ${c.name} on ${c.when} is cancelled. Reply to this message and we'll help you book another class.${SIGN}`);
+  });
+}
+
+// 24-hour reminder for a guest
+export async function sendGuestReminder(name: string, phone: string, key: string) {
+  if (!guestMessagesOn()) return false;
+  const c = await classLine(key);
+  await send(phone, `Hi ${firstName(name)}, a reminder that you are booked for ${c.name} on ${c.when}${c.teacher ? ` with ${c.teacher}` : ""}, about 24 hours from now.\nPlease arrive 10 minutes early. If you can't make it, reply to this message at least ${CANCEL_HOURS} hours before class.${SIGN}`);
+  return true;
+}
+
 export function notifyPurchase(userId: string, pkgName: string, classes: number, amount: number) {
   if (!notifyEnabled()) return;
   later(async () => {
