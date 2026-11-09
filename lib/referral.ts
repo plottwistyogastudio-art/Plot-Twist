@@ -38,7 +38,8 @@ export async function referralDiscountEligible(userId: string) {
 }
 
 // Price to charge for a package, with the referral discount if it applies.
-export async function priceFor(userId: string, pkg: { price: number; oncePerPerson?: boolean }) {
+export async function priceFor(userId: string, pkg: { price: number; oncePerPerson?: boolean; fixedPrice?: boolean }) {
+  if (pkg.fixedPrice) return { amount: pkg.price, discount: 0 };
   const eligible = (REFERRAL_ON_FIRST_PLOT || !pkg.oncePerPerson) && (await referralDiscountEligible(userId));
   if (!eligible) return { amount: pkg.price, discount: 0 };
   const amount = referralPrice(pkg.price);

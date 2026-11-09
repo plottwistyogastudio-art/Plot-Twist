@@ -1,6 +1,6 @@
 // Safe to import in the browser (no database code)
-import { firstPlot, packages } from "@/data/packages";
-export const findPackage = (id: string) => [...packages, ...firstPlot].find((p) => p.id === id);
+import { firstPlot, packages, promo1111 } from "@/data/packages";
+export const findPackage = (id: string) => [...packages, ...firstPlot, ...promo1111].find((p) => p.id === id);
 
 export const packLabel = (id: string) =>
   findPackage(id)?.name ?? (id === "manual" ? "Added by studio" : id === "referral-reward" ? "Referral reward" : id);

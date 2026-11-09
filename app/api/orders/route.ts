@@ -2,7 +2,7 @@ import { siteUrl } from "@/lib/site";
 import { NextResponse } from "next/server";
 import { getUser, supabaseAdmin } from "@/lib/supabase";
 import { findClass, findPackage, hasUsedFirstPlot } from "@/lib/booking";
-import { firstPlotOpen } from "@/data/packages";
+import { firstPlotOpen, promo1111, promo1111Open } from "@/data/packages";
 import { priceFor } from "@/lib/referral";
 import { evaluatePromo } from "@/lib/promo";
 import { createCheckout, dokuEnabled, invoiceFor } from "@/lib/doku";
@@ -18,6 +18,8 @@ export async function POST(req: Request) {
   if (classKey && !(await findClass(String(classKey)))) return NextResponse.json({ error: "Unknown class." }, { status: 400 });
   if (pkg.oncePerPerson && !firstPlotOpen())
     return NextResponse.json({ error: "First Plot has ended." }, { status: 409 });
+  if (promo1111.some((p) => p.id === pkg.id) && !promo1111Open())
+    return NextResponse.json({ error: "The Twist of Eleven deal is only available 10 to 12 November." }, { status: 409 });
   if (pkg.oncePerPerson && (await hasUsedFirstPlot(user.id)))
     return NextResponse.json({ error: "First Plot can only be bought once per person." }, { status: 409 });
 

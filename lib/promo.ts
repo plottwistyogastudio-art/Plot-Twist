@@ -22,7 +22,8 @@ export type PromoResult =
   | { ok: true; code: string | null; amount: number; discount: number; message: string };
 
 // Check a code for this member and package. Referral and promo never stack: the bigger discount wins.
-export async function evaluatePromo(userId: string, rawCode: string, pkg: { id: string; name: string; price: number; oncePerPerson?: boolean }): Promise<PromoResult> {
+export async function evaluatePromo(userId: string, rawCode: string, pkg: { id: string; name: string; price: number; oncePerPerson?: boolean; fixedPrice?: boolean }): Promise<PromoResult> {
+  if (pkg.fixedPrice) return { ok: false, message: "Promo codes cannot be combined with this deal." };
   const code = normalisePromo(rawCode);
   const bad = (message: string): PromoResult => ({ ok: false, message });
   if (!code) return bad("Enter a promo code.");

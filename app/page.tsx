@@ -4,7 +4,7 @@ import CtaBand from "@/components/CtaBand";
 import PackageCard from "@/components/PackageCard";
 import TeacherCard from "@/components/TeacherCard";
 import { classTypes } from "@/data/classTypes";
-import { firstPlot, firstPlotOpen, firstPlotWindow } from "@/data/packages";
+import { firstPlot, firstPlotOpen, firstPlotWindow, promo1111, promo1111Open, promo1111Window } from "@/data/packages";
 import { OPENING_DATE, getClasses } from "@/data/schedule";
 import { site } from "@/data/site";
 import { teacherCards } from "@/data/teachers";
@@ -96,6 +96,24 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+
+      {promo1111Open() && (
+      <section className="band band-blush">
+        <div className="container">
+          <div className="center section-head-center">
+            <div className="eyebrow">Single-date sale · {promo1111Window}</div>
+            <h2 className="h2">Twist of Eleven</h2>
+            <p className="muted deal-text deal-text-center">Three days only. Buy 11 classes, get 1 free.</p>
+          </div>
+          <div className="grid grid-3">
+            {promo1111.map((p) => <PackageCard key={p.id} pkg={p} compact />)}
+          </div>
+          <div className="center band-link">
+            <Link href="/packages" className="text-link">See all packages</Link>
+          </div>
+        </div>
+      </section>
+      )}
 
       {firstPlotOpen() && (
       <section className="band band-blush">

@@ -1,5 +1,5 @@
 import { OPENING_DATE, CLASS_CAPACITY } from "@/data/schedule";
-import { firstPlot, packages } from "@/data/packages";
+import { firstPlot, packages, promo1111 } from "@/data/packages";
 import { supabaseAdmin } from "@/lib/supabase";
 
 import { CANCEL_HOURS, findClass as findClassIn, classStart } from "@/lib/booking-shared";
@@ -12,7 +12,7 @@ export { CANCEL_HOURS, classStart };
 export async function findClass(key: string) {
   return findClassIn(key, await getConfig());
 }
-const allPackages = [...packages, ...firstPlot];
+const allPackages = [...packages, ...firstPlot, ...promo1111];
 
 // Validity rules.
 // "purchase": the clock starts when the package is bought.
@@ -23,6 +23,9 @@ const VALIDITY: Record<string, { days: number; from: "purchase" | "first_booking
   "pack-10": { days: 70, from: "first_booking" },
   "first-plot-3": { days: 21, from: "first_booking" },
   "first-plot-5": { days: 35, from: "first_booking" },
+  "promo-1111-3": { days: 21, from: "first_booking" },
+  "promo-1111-5": { days: 35, from: "first_booking" },
+  "promo-1111-11": { days: 84, from: "first_booking" },
 };
 const addDays = (days: number) => new Date(Date.now() + days * 86400_000).toISOString();
 

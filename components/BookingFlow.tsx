@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { authFetch, supabaseBrowser } from "@/lib/supabase";
-import { firstPlot, firstPlotOpen, formatIDR, packages, perClass, type Pkg } from "@/data/packages";
+import { firstPlot, firstPlotOpen, formatIDR, packages, promo1111, promo1111Open, perClass, type Pkg } from "@/data/packages";
 import { formatFullDay, parseISO } from "@/lib/dates";
 import { CANCEL_HOURS } from "@/lib/booking-shared";
 import { buildIcs, downloadFile } from "@/lib/ics";
@@ -77,7 +77,7 @@ export default function BookingFlow({ classKey, packageId }: { classKey?: string
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chosen]);
 
-  const priceOf = (p: Pkg) => (promo && promo.packageId === p.id ? promo.amount : me?.referral?.discountEligible && (REFERRAL_ON_FIRST_PLOT || !p.oncePerPerson) ? referralPrice(p.price) : p.price);
+  const priceOf = (p: Pkg) => (p.fixedPrice ? p.price : promo && promo.packageId === p.id ? promo.amount : me?.referral?.discountEligible && (REFERRAL_ON_FIRST_PLOT || !p.oncePerPerson) ? referralPrice(p.price) : p.price);
 
   useEffect(() => {
     (async () => {
@@ -250,7 +250,7 @@ export default function BookingFlow({ classKey, packageId }: { classKey?: string
 
   // ---------- Step 3: QRIS ----------
   if (orderId) {
-    const pkg = [...packages, ...firstPlot].find((p) => p.id === chosen)!;
+    const pkg = [...packages, ...firstPlot, ...promo1111].find((p) => p.id === chosen)!;
     return (
       <div className="flow">
         <div className="eyebrow">Step 3 of 3</div>
@@ -300,7 +300,7 @@ export default function BookingFlow({ classKey, packageId }: { classKey?: string
     );
   }
 
-  const options: Pkg[] = [...(me.usedFirstPlot || !firstPlotOpen() ? [] : [...firstPlot].reverse()), ...packages];
+  const options: Pkg[] = [...(promo1111Open() ? promo1111 : []), ...(me.usedFirstPlot || !firstPlotOpen() ? [] : [...firstPlot].reverse()), ...packages];
   const selected = options.find((p) => p.id === chosen) ?? null;
   return (
     <div className="flow">
@@ -314,6 +314,7 @@ export default function BookingFlow({ classKey, packageId }: { classKey?: string
             <input type="radio" name="pkg" checked={chosen === p.id} onChange={() => setChosen(p.id)} />
             <span className="grow">
               {p.oncePerPerson && <span className="eyebrow">Opening deal · new members only</span>}
+              {p.fixedPrice && <span className="eyebrow">Twist of Eleven · until 12 Nov</span>}
               <span className="card-title">{p.name}</span>
               <span className="muted small">{p.classes} {p.classes === 1 ? "class" : "classes"} · valid {p.validity}{p.classes > 1 ? ` · ${formatIDR(perClass(p))} per class` : ""}</span>
               {p.regularPrice && <span className="muted small">Regular <s>{formatIDR(p.regularPrice)}</s></span>}

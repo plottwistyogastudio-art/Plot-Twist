@@ -9,6 +9,7 @@ export type Pkg = {
   featured?: boolean;
   regularPrice?: number; // shown struck through, for deals
   oncePerPerson?: boolean; // deal can only be bought once
+  fixedPrice?: boolean; // no referral discount or promo code on top
 };
 
 // Regular price list. Edit prices here.
@@ -72,6 +73,52 @@ export const firstPlot: Pkg[] = [
     desc: "Five classes to settle into your practice.",
     validity: "5 weeks from your first booking",
     oncePerPerson: true,
+  },
+];
+
+// Twist of Eleven (11.11) single-date sale: on sale 10-12 November 2026 (Jakarta time) only
+export const promo1111Window = "10 to 12 November 2026";
+export const PROMO_1111_STARTS_AT = "2026-11-10T00:00:00+07:00";
+export const PROMO_1111_ENDS_AT = "2026-11-12T23:59:59+07:00";
+export const promo1111Open = () => {
+  const now = Date.now();
+  return now >= new Date(PROMO_1111_STARTS_AT).getTime() && now <= new Date(PROMO_1111_ENDS_AT).getTime();
+};
+
+export const promo1111: Pkg[] = [
+  {
+    id: "promo-1111-3",
+    tag: "Twist of Eleven",
+    name: "Twist of Eleven · 3 Classes",
+    classes: 3,
+    price: 297000,
+    regularPrice: 360000, // 3 x drop-in
+    desc: "Three classes at a Twist of Eleven price.",
+    validity: "3 weeks from your first booking",
+    fixedPrice: true,
+  },
+  {
+    id: "promo-1111-5",
+    tag: "Twist of Eleven",
+    name: "Twist of Eleven · 5 Classes",
+    classes: 5,
+    price: 480000,
+    regularPrice: 560000, // regular 5 Class Pack
+    desc: "Five classes at a Twist of Eleven price.",
+    validity: "5 weeks from your first booking",
+    fixedPrice: true,
+  },
+  {
+    id: "promo-1111-11",
+    tag: "Twist of Eleven",
+    name: "Twist of Eleven · 11 + 1 Classes",
+    classes: 12,
+    price: 1111000,
+    regularPrice: 1440000, // 12 x drop-in
+    desc: "Buy 11 classes, get 1 free: 12 classes in total.",
+    validity: "12 weeks from your first booking",
+    featured: true,
+    fixedPrice: true,
   },
 ];
 
