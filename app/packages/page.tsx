@@ -14,7 +14,7 @@ const faqs = [
 ];
 
 // Rebuilt at most once an hour, so First Plot disappears by itself after its end date
-export const revalidate = 3600;
+export const revalidate = 300;
 
 export default function PackagesPage() {
   return (
