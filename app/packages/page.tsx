@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import PackageCard from "@/components/PackageCard";
-import { firstPlot, firstPlotOpen, firstPlotWindow, packages, promo1111, promo1111Open, promo1111Window } from "@/data/packages";
+import { firstPlot, firstPlotOpen, firstPlotWindow, grandOpening, grandOpeningOpen, grandOpeningWindow, packages, promo1111, promo1111Open, promo1111Window } from "@/data/packages";
 import { site } from "@/data/site";
 
 export const metadata: Metadata = { title: "Packages", description: "Drop-in, 5-class and 10-class yoga packages at Plot Twist Studio, Lippo Karawaci." };
@@ -28,6 +28,21 @@ export default function PackagesPage() {
           {firstPlotOpen() ? "Start with our opening deal, or choose a regular package. " : "Choose the package that fits your rhythm. "}
           Every package works for any class on the schedule.
         </p>
+
+        {grandOpeningOpen() && (
+        <div className="deal">
+          <div className="eyebrow">Opening week · {grandOpeningWindow}</div>
+          <h2 className="h2 deal-title">Grand Opening Week</h2>
+          <p className="muted deal-text">
+            Welcome to Plot Twist. Special prices on 3, 5 and 10 classes, open to everyone. Promo codes and referral discounts do not apply to these packs.
+          </p>
+          <div className="grid grid-3 deal-grid">
+            {grandOpening.map((p) => (
+              <PackageCard key={p.id} pkg={p} />
+            ))}
+          </div>
+        </div>
+        )}
 
         {promo1111Open() && (
         <div className="deal">

@@ -4,7 +4,7 @@ import CtaBand from "@/components/CtaBand";
 import PackageCard from "@/components/PackageCard";
 import TeacherCard from "@/components/TeacherCard";
 import { classTypes } from "@/data/classTypes";
-import { firstPlot, firstPlotOpen, firstPlotWindow, promo1111, promo1111Open, promo1111Window } from "@/data/packages";
+import { firstPlot, firstPlotOpen, firstPlotWindow, grandOpening, grandOpeningOpen, grandOpeningWindow, promo1111, promo1111Open, promo1111Window } from "@/data/packages";
 import { OPENING_DATE, getClasses } from "@/data/schedule";
 import { site } from "@/data/site";
 import { teacherCards } from "@/data/teachers";
@@ -96,6 +96,24 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+
+      {grandOpeningOpen() && (
+      <section className="band band-blush">
+        <div className="container">
+          <div className="center section-head-center">
+            <div className="eyebrow">Opening week · {grandOpeningWindow}</div>
+            <h2 className="h2">Grand Opening Week</h2>
+            <p className="muted deal-text deal-text-center">Welcome to Plot Twist. Special prices on 3, 5 and 10 classes, open to everyone.</p>
+          </div>
+          <div className="grid grid-3">
+            {grandOpening.map((p) => <PackageCard key={p.id} pkg={p} compact />)}
+          </div>
+          <div className="center band-link">
+            <Link href="/packages" className="text-link">See all packages</Link>
+          </div>
+        </div>
+      </section>
+      )}
 
       {promo1111Open() && (
       <section className="band band-blush">

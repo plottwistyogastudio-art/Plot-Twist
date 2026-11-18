@@ -122,6 +122,52 @@ export const promo1111: Pkg[] = [
   },
 ];
 
+// Grand Opening Week: on sale 18-22 November 2026 (Jakarta time) only, for everyone
+export const grandOpeningWindow = "18 to 22 November 2026";
+export const GRAND_OPENING_STARTS_AT = "2026-11-18T00:00:00+07:00";
+export const GRAND_OPENING_ENDS_AT = "2026-11-22T23:59:59+07:00";
+export const grandOpeningOpen = () => {
+  const now = Date.now();
+  return now >= new Date(GRAND_OPENING_STARTS_AT).getTime() && now <= new Date(GRAND_OPENING_ENDS_AT).getTime();
+};
+
+export const grandOpening: Pkg[] = [
+  {
+    id: "grand-3",
+    tag: "Grand Opening Week",
+    name: "Grand Opening · 3 Credits",
+    classes: 3,
+    price: 297000, // IDR 99.000 per class
+    regularPrice: 360000, // 3 x drop-in
+    desc: "Three classes to get started.",
+    validity: "3 weeks from your first booking",
+    fixedPrice: true,
+  },
+  {
+    id: "grand-5",
+    tag: "Grand Opening Week",
+    name: "Grand Opening · 5 Credits",
+    classes: 5,
+    price: 485000, // IDR 97.000 per class
+    regularPrice: 560000, // regular 5 Class Pack
+    desc: "Five classes to settle into your practice.",
+    validity: "5 weeks from your first booking",
+    fixedPrice: true,
+  },
+  {
+    id: "grand-10",
+    tag: "Grand Opening Week",
+    name: "Grand Opening · 10 Credits",
+    classes: 10,
+    price: 950000, // IDR 95.000 per class
+    regularPrice: 1040000, // regular 10 Class Pack
+    desc: "Ten classes for a steady weekly practice.",
+    validity: "10 weeks from your first booking",
+    featured: true,
+    fixedPrice: true,
+  },
+];
+
 // 1040000 -> "IDR 1.040.000"
 export function formatIDR(n: number) {
   return "IDR " + n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
