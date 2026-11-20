@@ -277,6 +277,10 @@ function SlotRow({ slot, teachers, onChange, onRemove }: {
         <option value="">Teacher TBA</option>
         {teachers.map((t) => <option key={t.id} value={t.id}>{t.name || "(no name)"}</option>)}
       </select>
+      <label className="slot-dur" title="Free class: any signed-in member can book without a credit">
+        <input type="checkbox" checked={!!slot.free} aria-label="Free (0 credit)" onChange={(e) => onChange({ free: e.target.checked || undefined })} />
+        <span className="muted small">Free</span>
+      </label>
       <button className="text-link small" onClick={onRemove}>Remove</button>
     </div>
   );

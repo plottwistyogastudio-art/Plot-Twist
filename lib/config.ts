@@ -30,6 +30,7 @@ function cleanSlots(raw: unknown, teacherIds: Set<string>, where: string): { slo
     slots.push({
       time, name, type: r.type as SlotRec["type"], duration: `${mins} min`, level: str(r?.level, 40),
       teacherId: teacherIds.has(teacherId) ? teacherId : "",
+      ...(r?.free === true ? { free: true } : {}),
     });
   }
   slots.sort((a, b) => a.time.localeCompare(b.time));

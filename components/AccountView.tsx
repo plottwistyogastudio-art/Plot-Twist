@@ -64,7 +64,7 @@ export default function AccountView() {
   const go = (t: Tab) => { setTab(t); setMsg(""); history.replaceState(null, "", `#${t}`); };
 
   async function cancel(b: Booking) {
-    const sure = window.confirm(b.status === "waitlist" ? "Leave the waitlist?" : "Cancel this booking? Your credit is returned only if it is more than 12 hours before class.");
+    const sure = window.confirm(b.status === "waitlist" ? "Leave the waitlist?" : "Cancel this booking? If it used a credit, the credit is returned only if it is more than 12 hours before class.");
     if (!sure) return;
     const r = await authFetch(`/api/bookings/${b.id}`, { method: "DELETE" });
     const j = await r.json();
@@ -225,7 +225,7 @@ function ProfileForm({ me, onSaved }: { me: Me; onSaved: () => void }) {
       <label className="field">Email<input value={me.email} disabled readOnly /></label>
       <p className="muted small acc-hint">To change your email, please message the studio.</p>
       <label className="check"><input type="checkbox" checked={marketing} onChange={(e) => setMarketing(e.target.checked)} />
-        <span>Send me studio news and offers.</span></label>
+        <span>Send me studio news and offers by WhatsApp or email. You can turn this off at any time.</span></label>
       {note && <p className={note.ok ? "flow-note" : "flow-error"} role="status">{note.text}</p>}
       <button className="btn btn-primary btn-block" disabled={busy}>{busy ? "Saving…" : "Save changes"}</button>
     </form>

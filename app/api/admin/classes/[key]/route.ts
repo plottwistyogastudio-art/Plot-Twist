@@ -32,7 +32,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ key: str
     return {
       id: b.id, userId: b.user_id, status: b.status, mat: b.mat ?? null, checkedIn: !!b.checked_in_at, guest: false,
       name: p?.full_name || p?.email || "Member", whatsapp: p?.whatsapp ?? "", email: p?.email ?? "",
-      pack: pack ? `${packLabel(pack.package_id)} · ${pack.remaining} left` : "No credit",
+      pack: b.pack_id || !cls.session.free ? (pack ? `${packLabel(pack.package_id)} · ${pack.remaining} left` : "No credit") : "Free class",
     };
   });
   return NextResponse.json({ key, ...cls.session, cancelled: !!cls.session.cancelled, iso: cls.iso, capacity: CLASS_CAPACITY, booked: people.filter((p) => p.status === "booked"), waitlist: people.filter((p) => p.status === "waitlist") });

@@ -14,6 +14,7 @@ export type ClassSession = {
   level: string;
   teacher: string;
   cancelled?: boolean; // cancelled for this date only (e.g. too few people)
+  free?: boolean;      // 0 credit: any signed-in member can book, no credit needed
 };
 
 // One class as stored (points at a teacher by id, so renaming a teacher updates every class)
@@ -24,6 +25,7 @@ export type SlotRec = {
   duration: string;
   level: string;
   teacherId: string;
+  free?: boolean;
 };
 
 // Everything the admin can edit. Saved in the database (table site_config).

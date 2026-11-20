@@ -36,7 +36,7 @@ export const findPackage = (id: string) => allPackages.find((p) => p.id === id);
 export const classKey = (iso: string, time: string) => `${iso}_${time}`;
 
 export type BookResult =
-  | { status: "booked" | "waitlist"; bookingId: string; packRemaining: number }
+  | { status: "booked" | "waitlist"; bookingId: string; packRemaining: number | null }
   | { status: "needs_payment" }
   | { status: "error"; message: string };
 
@@ -83,8 +83,10 @@ export async function bookClass(userId: string, key: string): Promise<BookResult
     .from("bookings").select("id").eq("user_id", userId).eq("class_key", key).in("status", ["booked", "waitlist"]).limit(1);
   if (existing?.length) return { status: "error", message: "You already have a spot in this class." };
 
-  const pack = await usablePack(userId);
-  if (!pack) return { status: "needs_payment" };
+  // Free (0 credit) classes: any signed-in member can book, no credit is used.
+  const free = !!cls.session.free;
+  const pack = free ? null : await usablePack(userId);
+  if (!free && !pack) return { status: "needs_payment" };
 
   const left = await spotsLeft(key);
   if (left === 0) {
@@ -94,18 +96,22 @@ export async function bookClass(userId: string, key: string): Promise<BookResult
     const { data, error } = await db.from("bookings").insert({ user_id: userId, class_key: key, status: "waitlist" }).select("id").single();
     if (error) return { status: "error", message: "Could not join the waitlist." };
     notifyBooked(userId, key, "waitlist");
-    return { status: "waitlist", bookingId: data.id, packRemaining: pack.remaining };
+    return { status: "waitlist", bookingId: data.id, packRemaining: pack?.remaining ?? 0 };
   }
 
   // Take the credit first, only if still available (guards against double use)
-  const { data: taken } = await db.from("credit_packs")
-    .update(useCredit(pack)).eq("id", pack.id).eq("remaining", pack.remaining).select("remaining").single();
-  if (!taken) return { status: "error", message: "Please try again." };
+  let takenRemaining = 0;
+  if (pack) {
+    const { data: taken } = await db.from("credit_packs")
+      .update(useCredit(pack)).eq("id", pack.id).eq("remaining", pack.remaining).select("remaining").single();
+    if (!taken) return { status: "error", message: "Please try again." };
+    takenRemaining = taken.remaining;
+  }
 
   const { data, error } = await db.from("bookings")
-    .insert({ user_id: userId, class_key: key, status: "booked", pack_id: pack.id }).select("id").single();
+    .insert({ user_id: userId, class_key: key, status: "booked", pack_id: pack?.id ?? null }).select("id").single();
   if (error) {
-    await db.from("credit_packs").update({ remaining: pack.remaining, expires_at: pack.expires_at }).eq("id", pack.id);
+    if (pack) await db.from("credit_packs").update({ remaining: pack.remaining, expires_at: pack.expires_at }).eq("id", pack.id);
     return { status: "error", message: "Could not book this class." };
   }
 
@@ -115,11 +121,11 @@ export async function bookClass(userId: string, key: string): Promise<BookResult
   const position = (order ?? []).findIndex((r) => r.id === data.id);
   if (position >= CLASS_CAPACITY) {
     await db.from("bookings").update({ status: "cancelled" }).eq("id", data.id);
-    await db.from("credit_packs").update({ remaining: pack.remaining, expires_at: pack.expires_at }).eq("id", pack.id);
+    if (pack) await db.from("credit_packs").update({ remaining: pack.remaining, expires_at: pack.expires_at }).eq("id", pack.id);
     return { status: "error", message: "Sorry, someone just took the last spot. Please try again to join the waitlist." };
   }
   notifyBooked(userId, key, "booked");
-  return { status: "booked", bookingId: data.id, packRemaining: taken.remaining };
+  return { status: "booked", bookingId: data.id, packRemaining: pack ? takenRemaining : null };
 }
 
 // Cancel a booking. Credit is returned only up to CANCEL_HOURS before class.
@@ -129,7 +135,7 @@ export async function cancelBooking(userId: string, bookingId: string, opts: { r
   if (!b || b.status === "cancelled") return { ok: false, message: "Booking not found." };
 
   const hoursLeft = (classStart(b.class_key).getTime() - Date.now()) / 3600_000;
-  const refund = b.status === "booked" && (opts.refundAlways || hoursLeft >= CANCEL_HOURS);
+  const refund = b.status === "booked" && !!b.pack_id && (opts.refundAlways || hoursLeft >= CANCEL_HOURS);
   if (b.status === "booked" && hoursLeft < 0 && !opts.refundAlways) return { ok: false, message: "This class has already started." };
 
   await db.from("bookings").update({ status: "cancelled" }).eq("id", bookingId);
@@ -255,6 +261,11 @@ async function promoteWaitlist(key: string) {
     .select("*").eq("class_key", key).eq("status", "waitlist").order("created_at", { ascending: true });
   for (const w of queue ?? []) {
     if ((await spotsLeft(key)) === 0) return;
+    if ((await findClass(key))?.session.free) {
+      await db.from("bookings").update({ status: "booked", pack_id: null }).eq("id", w.id);
+      notifyBooked(w.user_id, key, "promoted");
+      return;
+    }
     const pack = await usablePack(w.user_id);
     if (!pack) continue;
     const { data: taken } = await db.from("credit_packs")
@@ -314,6 +325,11 @@ export async function promoteBooking(bookingId: string) {
   const { data: w } = await db.from("bookings").select("*").eq("id", bookingId).eq("status", "waitlist").single();
   if (!w) return { ok: false, message: "Waitlist entry not found." };
   if ((await spotsLeft(w.class_key)) === 0) return { ok: false, message: "The class is still full." };
+  if ((await findClass(w.class_key))?.session.free) {
+    await db.from("bookings").update({ status: "booked", pack_id: null }).eq("id", w.id);
+    notifyBooked(w.user_id, w.class_key, "promoted");
+    return { ok: true };
+  }
   const pack = await usablePack(w.user_id);
   if (!pack) return { ok: false, message: "This member has no credit left." };
   const { data: taken } = await db.from("credit_packs")

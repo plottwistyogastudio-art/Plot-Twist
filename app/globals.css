@@ -623,7 +623,7 @@ button { font-family: inherit; cursor: pointer; }
 .sched-days button span { color: var(--muted); font-weight: 400; margin-left: 4px; }
 .sched-days button.is-on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .sched-days button.is-on span { color: var(--cream-text); }
-.slot-row { display: grid; grid-template-columns: 110px minmax(150px, 1.4fr) 120px 96px minmax(110px, 1fr) minmax(140px, 1fr) auto; gap: 8px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.slot-row { display: grid; grid-template-columns: 110px minmax(150px, 1.4fr) 120px 96px minmax(110px, 1fr) minmax(140px, 1fr) auto auto; gap: 8px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
 .slot-dur { display: flex; align-items: center; gap: 6px; }
 .slot-dur .admin-input { width: 70px; }
 textarea.admin-input { height: auto; min-height: 84px; padding: 10px 12px; resize: vertical; }
@@ -746,3 +746,5 @@ select.admin-input { padding-right: 8px; }
 .guest-form .btn { align-self: flex-start; }
 .check-row { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; line-height: 1.4; }
 .check-row input { margin-top: 3px; }
+
+.pill-free { background: var(--ink, #1f2a24); color: #fff; font-size: 11px; padding: 2px 8px; margin-left: 6px; vertical-align: middle; }

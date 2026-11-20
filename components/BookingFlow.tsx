@@ -9,7 +9,7 @@ import { CANCEL_HOURS } from "@/lib/booking-shared";
 import { buildIcs, downloadFile } from "@/lib/ics";
 import { REFERRAL_DISCOUNT_PCT, REFERRAL_ON_FIRST_PLOT, REFERRAL_STORAGE_KEY, normaliseCode, referralPrice } from "@/data/referral";
 
-type ClassInfo = { cancelled?: boolean; iso: string; time: string; name: string; duration: string; teacher: string; spotsLeft: number; full: boolean };
+type ClassInfo = { cancelled?: boolean; iso: string; time: string; name: string; duration: string; teacher: string; spotsLeft: number; full: boolean; free?: boolean };
 type Referral = { code: string | null; referredBy: boolean; discountEligible: boolean; canApplyCode: boolean };
 type Me = { email: string; credits: number; usedFirstPlot: boolean; profile: { full_name?: string } | null; referral?: Referral | null; bookings?: { class_key: string; status: string }[] };
 type Done = { kind: "booked" | "waitlist" | "package"; credits?: number; bookingId?: string };
@@ -157,6 +157,7 @@ export default function BookingFlow({ classKey, packageId }: { classKey?: string
       <div className="card-title">{cls.name}</div>
       <div className="muted small">{formatFullDay(parseISO(cls.iso))} · {cls.time} · {cls.duration}</div>
       <div className="muted small">{cls.teacher}</div>
+      {cls.free && <div className="small strong deep">Free class · no credit needed</div>}
       {cls.full && <div className="small strong deep">This class is full. You can join the waitlist.</div>}
     </div>
   );
@@ -185,15 +186,15 @@ export default function BookingFlow({ classKey, packageId }: { classKey?: string
           {done.kind === "package" && "Your package is active"}
         </h1>
         {cls && done.kind !== "package" && classCard}
-        {done.kind === "waitlist" && <p className="flow-note">If a spot opens, we book you automatically. No credit is used until then. The waitlist closes 12 hours before class.</p>}
-        {done.kind === "booked" && <p className="flow-note">Arrive 10 minutes early. Cancel up to 12 hours before class to keep your credit.</p>}
+        {done.kind === "waitlist" && <p className="flow-note">If a spot opens, we book you automatically. {cls?.free ? "" : "No credit is used until then. "}The waitlist closes 12 hours before class.</p>}
+        {done.kind === "booked" && <p className="flow-note">{cls?.free ? "Arrive 10 minutes early. This class is free. If you cannot make it, please cancel so someone else can join." : "Arrive 10 minutes early. Cancel up to 12 hours before class to keep your credit."}</p>}
         {mat && (
           <p className="flow-note">
             Mat: <b>{mat === "studio" ? "studio mat" : "your own mat"}</b>{" "}
             <button type="button" className="text-link forgot" onClick={() => setMatAsked(false)}>Change</button>
           </p>
         )}
-        {me && <p className="flow-note"><b>{me.credits}</b> {me.credits === 1 ? "class" : "classes"} left.</p>}
+        {me && !cls?.free && <p className="flow-note"><b>{me.credits}</b> {me.credits === 1 ? "class" : "classes"} left.</p>}
         <div className="flow-actions">
           {done.kind === "package"
             ? <Link href="/schedule" className="btn btn-primary btn-block">Book your first class</Link>
@@ -285,13 +286,13 @@ export default function BookingFlow({ classKey, packageId }: { classKey?: string
   }
 
   // ---------- Step 2: use a credit, or pick a package ----------
-  if (classKey && cls && me.credits > 0) {
+  if (classKey && cls && (me.credits > 0 || cls.free)) {
     return (
       <div className="flow">
         <div className="eyebrow">Step 2 of 2</div>
         <h1 className="h1 h1-page">{cls.full ? "Join the waitlist" : "Confirm booking"}</h1>
         {classCard}
-        <p className="flow-note">{cls.full ? "No credit is used until a spot opens." : "This uses 1 class credit."} You have <b>{me.credits}</b> {me.credits === 1 ? "class" : "classes"} left.</p>
+        <p className="flow-note">{cls.free ? "This is a free class. No credit is used." : <>{cls.full ? "No credit is used until a spot opens." : "This uses 1 class credit."} You have <b>{me.credits}</b> {me.credits === 1 ? "class" : "classes"} left.</>}</p>
         {error && <p className="flow-error" role="alert">{error}</p>}
         <button className="btn btn-primary btn-block" onClick={confirmWithCredit} disabled={busy}>
           {busy ? "Please wait…" : cls.full ? "Join waitlist" : "Confirm booking"}
@@ -412,7 +413,7 @@ export function AuthForm({ onDone, startMode = "signup" }: { onDone: () => void;
           <label className="check"><input type="checkbox" checked={agreeTerms} onChange={(e) => setAgreeTerms(e.target.checked)} required />
             <span>I have read and agree to the <a href="/terms" target="_blank" rel="noopener">Terms of Use</a>, including the {CANCEL_HOURS}-hour cancellation rule.</span></label>
           <label className="check"><input type="checkbox" checked={marketing} onChange={(e) => setMarketing(e.target.checked)} />
-            <span>Optional: send me studio news and offers. You can still book if you leave this unticked.</span></label>
+            <span>Optional: send me studio news and offers by WhatsApp or email. You can still book if you leave this unticked.</span></label>
         </div>
       )}
       {!signup && <button type="button" className="text-link forgot" onClick={forgot}>Forgot password?</button>}

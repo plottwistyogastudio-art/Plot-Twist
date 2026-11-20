@@ -88,7 +88,7 @@ async function classLine(key: string) {
   const c = findClass(key, await getConfig());
   const [iso, time] = key.split("_");
   const day = formatFullDay(parseISO(iso));
-  return { name: c?.session.name ?? "Class", when: `${day}, ${time}`, teacher: c ? c.session.teacher : "" };
+  return { name: c?.session.name ?? "Class", when: `${day}, ${time}`, teacher: c ? c.session.teacher : "", free: !!c?.session.free };
 }
 
 async function spotsInfo(key: string) {
@@ -109,7 +109,7 @@ export function notifyBooked(userId: string, key: string, kind: "booked" | "wait
     toMember(userId, kind === "waitlist" ? "You are on the waitlist" : kind === "promoted" ? "A spot opened, you are booked" : "Your booking is confirmed", (n) =>
       kind === "waitlist"
         ? `Hi ${n}, you're on the waitlist for ${c.name} on ${c.when}. If a spot opens we book you automatically and message you here.${SIGN}`
-        : `${kind === "promoted" ? `Good news ${n}, a spot opened! You're now booked` : `Hi ${n}, you're booked`} for ${c.name} on ${c.when}.\nPlease arrive 10 minutes early. You can cancel up to ${CANCEL_HOURS} hours before class to keep your credit.${SIGN}`,
+        : `${kind === "promoted" ? `Good news ${n}, a spot opened! You're now booked` : `Hi ${n}, you're booked`} for ${c.name} on ${c.when}.\nPlease arrive 10 minutes early. ${c.free ? "This is a free class, no credit needed. Please cancel if you cannot make it so someone else can join." : `You can cancel up to ${CANCEL_HOURS} hours before class to keep your credit.`}${SIGN}`,
     );
   });
 }
@@ -120,9 +120,9 @@ export function notifyCancelled(userId: string, key: string, wasBooked: boolean,
     const c = await classLine(key);
     const m = await member(userId);
     const spots = await spotsInfo(key);
-    toStudio(`${wasBooked ? "Booking dibatalkan" : "Keluar dari waitlist"}: ${m.name}\n${c.name}, ${c.when}${wasBooked ? `\nKredit ${refunded ? "dikembalikan" : "tidak dikembalikan (kurang dari 12 jam)"}\nMat terisi: ${spots}` : ""}`);
+    toStudio(`${wasBooked ? "Booking dibatalkan" : "Keluar dari waitlist"}: ${m.name}\n${c.name}, ${c.when}${wasBooked ? `${c.free ? "\nKelas gratis (0 credit)" : `\nKredit ${refunded ? "dikembalikan" : "tidak dikembalikan (kurang dari 12 jam)"}`}\nMat terisi: ${spots}` : ""}`);
     toMember(userId, "Your booking is cancelled", (n) =>
-      `Hi ${n}, your ${wasBooked ? "booking" : "waitlist spot"} for ${c.name} on ${c.when} is cancelled.${wasBooked ? (refunded ? " Your class credit was returned." : ` Your credit was not returned because it was less than ${CANCEL_HOURS} hours before class.`) : ""}${SIGN}`,
+      `Hi ${n}, your ${wasBooked ? "booking" : "waitlist spot"} for ${c.name} on ${c.when} is cancelled.${wasBooked && !c.free ? (refunded ? " Your class credit was returned." : ` Your credit was not returned because it was less than ${CANCEL_HOURS} hours before class.`) : ""}${SIGN}`,
     );
   });
 }
@@ -133,7 +133,7 @@ export function notifyClassCancelled(userId: string, key: string, wasBooked: boo
   later(async () => {
     const c = await classLine(key);
     toMember(userId, "Your class is cancelled", (n) =>
-      `Hi ${n}, we're sorry, but ${c.name} on ${c.when} is cancelled.${wasBooked ? " Your class credit has been returned to your account, so you can book another class." : ""}\nBook another class: ${siteUrl()}/schedule${SIGN}`,
+      `Hi ${n}, we're sorry, but ${c.name} on ${c.when} is cancelled.${wasBooked && !c.free ? " Your class credit has been returned to your account, so you can book another class." : ""}\nBook another class: ${siteUrl()}/schedule${SIGN}`,
     );
   });
 }
@@ -197,7 +197,7 @@ export async function sendReminder(userId: string, key: string) {
   if (!wa && !memberEmailEnabled()) return false;
   const c = await classLine(key);
   const m = await member(userId);
-  const text = `Hi ${m.name.split(" ")[0]}, a reminder that you are booked for ${c.name} on ${c.when}${c.teacher ? ` with ${c.teacher}` : ""}, about 24 hours from now.\nPlease arrive 10 minutes early. If you cannot make it, cancel up to ${CANCEL_HOURS} hours before class to keep your credit.${SIGN}`;
+  const text = `Hi ${m.name.split(" ")[0]}, a reminder that you are booked for ${c.name} on ${c.when}${c.teacher ? ` with ${c.teacher}` : ""}, about 24 hours from now.\nPlease arrive 10 minutes early. If you cannot make it, ${c.free ? "cancel so someone else can join." : `cancel up to ${CANCEL_HOURS} hours before class to keep your credit.`}${SIGN}`;
   let sent = false;
   if (memberEmailEnabled() && m.email) { await sendEmail(m.email, `Reminder: ${c.name}, ${c.when}`, text, { toMember: true }); sent = true; }
   if (wa && m.whatsapp) { await send(m.whatsapp, text); sent = true; }

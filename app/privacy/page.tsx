@@ -39,6 +39,7 @@ export default function PrivacyPage() {
       <ul>
         <li>To create and manage your account, bookings, waitlist spots and class credits.</li>
         <li>To contact you about your classes by email or WhatsApp: confirmations, waitlist updates, schedule changes and reminders.</li>
+        <li>If you tick the optional box for studio news and offers: to send you news, promotions and offers from the studio by WhatsApp or email. You can turn this off at any time in My account, or reply STOP to a message.</li>
         <li>If you add your birthdate: to send you a birthday greeting from the studio. We use it for nothing else.</li>
         <li>To keep records of payments, as required for our accounting and by law.</li>
         <li>To keep the studio safe and running smoothly, for example knowing who is on the mat list.</li>

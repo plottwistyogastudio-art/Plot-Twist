@@ -49,8 +49,8 @@ export default function TermsPage() {
       <p>
         We will not use your data for anything else, we will not sell it, and we will not share it with
         advertisers. We share it only with the service providers that run this website for us (hosting, database,
-        payment and email) and with authorities when the law requires it. Studio news and offers are sent only if
-        you tick the separate optional box. You can withdraw your consent, or ask to see, correct or delete your
+        payment and email) and with authorities when the law requires it. Studio news and offers, by WhatsApp or email, are sent
+        only if you tick the separate optional box. You can withdraw your consent, or ask to see, correct or delete your
         data, at any time. Withdrawing consent means we can no longer keep your account. The full details are in
         our <Link href="/privacy" className="text-link">Privacy Policy</Link>, which is part of these terms.
       </p>
