@@ -94,7 +94,8 @@ export default function RosterView({ classKey }: { classKey: string }) {
         {d.waitlist.map((p, i) => (
           <div className="admin-row" key={p.id}>
             <div className="admin-time">#{i + 1}</div>
-            <div className="grow"><b>{p.name}</b><div className="muted small">{p.whatsapp}</div></div>
+            <div className="grow"><b>{p.name}</b>{p.guest && <span className="chip guest-chip">WA guest</span>}<div className="muted small">{p.whatsapp}</div></div>
+            <span className={`chip ${p.mat === "studio" ? "chip-pink" : ""}`}>{p.mat === "studio" ? "Studio mat" : p.mat === "own" ? "Own mat" : "Mat ?"}</span>
             <div className="admin-pack">{p.pack}</div>
             <button className="btn btn-outline btn-sm" onClick={() => act(`/api/admin/bookings/${p.id}`, { method: "PATCH", body: JSON.stringify({ action: "promote" }) })}>Move up</button>
             <button className="text-link" onClick={() => cancel(p)}>Remove</button>
