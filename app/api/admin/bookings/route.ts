@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin, forbidden } from "@/lib/admin";
 import { bookClass, bookGuest } from "@/lib/booking";
 import { guestMessagesOn } from "@/lib/notify";
+import { supabaseAdmin } from "@/lib/supabase";
 
 // Add someone to a class (walk-ins, phone / WhatsApp bookings).
 //   { classKey, memberId }                         a member with an account: uses the member's own credit
@@ -22,5 +23,7 @@ export async function POST(req: Request) {
   const r = await bookClass(String(body?.memberId ?? ""), classKey);
   if (r.status === "needs_payment") return NextResponse.json({ ok: false, message: "This member has no credit. Add one on their member page first." }, { status: 400 });
   if (r.status === "error") return NextResponse.json({ ok: false, message: r.message }, { status: 400 });
+  const mat = body?.mat === "studio" || body?.mat === "own" ? body.mat : null;
+  if (mat) await supabaseAdmin().from("bookings").update({ mat }).eq("id", r.bookingId);
   return NextResponse.json({ ok: true, status: r.status });
 }

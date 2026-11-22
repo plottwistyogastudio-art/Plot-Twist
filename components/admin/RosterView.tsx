@@ -121,6 +121,7 @@ function AddPerson({ classKey, onDone }: { classKey: string; onDone: (msg: strin
 
 function AddMember({ classKey, onDone }: { classKey: string; onDone: (msg: string) => void }) {
   const [q, setQ] = useState("");
+  const [mat, setMat] = useState<"studio" | "own">("own");
   const [list, setList] = useState<Member[]>([]);
   useEffect(() => {
     if (q.trim().length < 2) return setList([]);
@@ -131,12 +132,18 @@ function AddMember({ classKey, onDone }: { classKey: string; onDone: (msg: strin
     return () => clearTimeout(t);
   }, [q]);
   async function add(m: Member) {
-    const r = await authFetch("/api/admin/bookings", { method: "POST", body: JSON.stringify({ classKey, memberId: m.id }) });
+    const r = await authFetch("/api/admin/bookings", { method: "POST", body: JSON.stringify({ classKey, memberId: m.id, mat }) });
     const j = await r.json();
     onDone(r.ok ? `${m.full_name ?? m.email} added${j.status === "waitlist" ? " to the waitlist" : ""}.` : j.message);
   }
   return (
     <>
+      <label className="field">Mat
+        <select value={mat} onChange={(e) => setMat(e.target.value as "studio" | "own")}>
+          <option value="own">Own mat</option>
+          <option value="studio">Studio mat</option>
+        </select>
+      </label>
       <label className="field">Find a member<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name, email or WhatsApp" autoFocus /></label>
       {list.map((m) => (
         <div className="admin-row" key={m.id}>
@@ -153,7 +160,7 @@ function AddMember({ classKey, onDone }: { classKey: string; onDone: (msg: strin
 function AddGuest({ classKey, onDone }: { classKey: string; onDone: (msg: string) => void }) {
   const [name, setName] = useState("");
   const [wa, setWa] = useState("");
-  const [mat, setMat] = useState<"" | "studio" | "own">("");
+  const [mat, setMat] = useState<"studio" | "own">("own");
   const [notify, setNotify] = useState(true);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -164,7 +171,7 @@ function AddGuest({ classKey, onDone }: { classKey: string; onDone: (msg: string
     setBusy(true);
     const r = await authFetch("/api/admin/bookings", {
       method: "POST",
-      body: JSON.stringify({ classKey, guest: { name, whatsapp: wa, mat: mat || null, notify } }),
+      body: JSON.stringify({ classKey, guest: { name, whatsapp: wa, mat, notify } }),
     });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
@@ -177,10 +184,9 @@ function AddGuest({ classKey, onDone }: { classKey: string; onDone: (msg: string
       <label className="field">Name<input value={name} onChange={(e) => setName(e.target.value)} placeholder="For example Priscilla" autoFocus required maxLength={80} /></label>
       <label className="field">WhatsApp number<input value={wa} onChange={(e) => setWa(e.target.value)} inputMode="tel" placeholder="0812 3456 7890" required /></label>
       <label className="field">Mat
-        <select value={mat} onChange={(e) => setMat(e.target.value as "" | "studio" | "own")}>
-          <option value="">Not sure yet</option>
-          <option value="studio">Studio mat</option>
+        <select value={mat} onChange={(e) => setMat(e.target.value as "studio" | "own")}>
           <option value="own">Own mat</option>
+          <option value="studio">Studio mat</option>
         </select>
       </label>
       <label className="check-row"><input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} /> Send a WhatsApp confirmation now (they also get a reminder 24 hours before)</label>
