@@ -73,7 +73,9 @@ export default function AccountView() {
   }
 
   async function setMat(b: Booking, mat: "studio" | "own") {
-    await authFetch(`/api/bookings/${b.id}`, { method: "PATCH", body: JSON.stringify({ mat }) });
+    const r = await authFetch(`/api/bookings/${b.id}`, { method: "PATCH", body: JSON.stringify({ mat }) });
+    const j = await r.json().catch(() => ({}));
+    setMsg(r.ok ? "" : j.message ?? "Could not save your choice.");
     load();
   }
 

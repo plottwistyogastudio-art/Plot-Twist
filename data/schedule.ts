@@ -51,6 +51,7 @@ export const defaultConfig: SiteConfig = applyLaunchTimetable({
 // ---- Opening + how far ahead visitors can browse ----
 export const OPENING_DATE = "2026-10-15"; // no classes before this day
 export const CLASS_CAPACITY = 12; // mats per class
+export const STUDIO_MAT_LIMIT = 5; // studio mats the studio can lend per class
 export const WEEKS_AHEAD = 8; // weeks shown from the opening week
 
 export const TEACHER_TBA = "Teacher TBA";

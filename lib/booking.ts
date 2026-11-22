@@ -70,6 +70,15 @@ export async function spotsLeft(key: string) {
   return Math.max(0, CLASS_CAPACITY - (count ?? 0));
 }
 
+// Studio mats already taken for a class (booked and waitlisted members who chose a studio mat)
+export async function studioMatsTaken(key: string, excludeBookingId?: string) {
+  let q = supabaseAdmin().from("bookings").select("id", { count: "exact", head: true })
+    .eq("class_key", key).eq("mat", "studio").in("status", ["booked", "waitlist"]);
+  if (excludeBookingId) q = q.neq("id", excludeBookingId);
+  const { count } = await q;
+  return count ?? 0;
+}
+
 export async function bookClass(userId: string, key: string): Promise<BookResult> {
   const db = supabaseAdmin();
   const cls = await findClass(key);

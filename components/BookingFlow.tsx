@@ -9,7 +9,7 @@ import { CANCEL_HOURS } from "@/lib/booking-shared";
 import { buildIcs, downloadFile } from "@/lib/ics";
 import { REFERRAL_DISCOUNT_PCT, REFERRAL_ON_FIRST_PLOT, REFERRAL_STORAGE_KEY, normaliseCode, referralPrice } from "@/data/referral";
 
-type ClassInfo = { cancelled?: boolean; iso: string; time: string; name: string; duration: string; teacher: string; spotsLeft: number; full: boolean; free?: boolean };
+type ClassInfo = { cancelled?: boolean; iso: string; time: string; name: string; duration: string; teacher: string; spotsLeft: number; full: boolean; free?: boolean; studioMatsLeft?: number };
 type Referral = { code: string | null; referredBy: boolean; discountEligible: boolean; canApplyCode: boolean };
 type Me = { email: string; credits: number; usedFirstPlot: boolean; profile: { full_name?: string } | null; referral?: Referral | null; bookings?: { class_key: string; status: string }[] };
 type Done = { kind: "booked" | "waitlist" | "package"; credits?: number; bookingId?: string };
@@ -134,11 +134,19 @@ export default function BookingFlow({ classKey, packageId }: { classKey?: string
     setOrderId(j.order.id);
   }
 
-  async function chooseMat(choice: "studio" | "own" | null) {
-    setMatAsked(true);
-    if (!choice || !done?.bookingId) return;
+  const [matError, setMatError] = useState("");
+  async function chooseMat(choice: "studio" | "own") {
+    if (!done?.bookingId) return;
+    setMatError("");
+    const r = await authFetch(`/api/bookings/${done.bookingId}`, { method: "PATCH", body: JSON.stringify({ mat: choice }) });
+    if (!r.ok) {
+      const j = await r.json().catch(() => ({}));
+      setMatError(j.message ?? "Could not save your choice. Please try again.");
+      if (r.status === 409 && cls) setCls({ ...cls, studioMatsLeft: 0 });
+      return;
+    }
     setMat(choice);
-    await authFetch(`/api/bookings/${done.bookingId}`, { method: "PATCH", body: JSON.stringify({ mat: choice }) });
+    setMatAsked(true);
   }
 
   async function simulatePay() {
@@ -172,10 +180,10 @@ export default function BookingFlow({ classKey, packageId }: { classKey?: string
               <h2 id="mat-title">Your mat</h2>
               <p className="muted">Do you need a mat from the studio, or will you bring your own?</p>
               <div className="modal-choices">
-                <button className="modal-choice" autoFocus onClick={() => chooseMat("studio")}><b>I need a studio mat</b><span className="muted small">We will have one ready for you.</span></button>
+                <button className="modal-choice" autoFocus={cls?.studioMatsLeft !== 0} disabled={cls?.studioMatsLeft === 0} onClick={() => chooseMat("studio")}><b>I need a studio mat</b><span className="muted small">{cls?.studioMatsLeft === 0 ? "Studio mats are all taken for this class." : "We will have one ready for you."}</span></button>
                 <button className="modal-choice" onClick={() => chooseMat("own")}><b>I will bring my own</b><span className="muted small">See you with your mat.</span></button>
               </div>
-              <button className="modal-skip" onClick={() => chooseMat(null)}>Decide later</button>
+              {matError && <p className="flow-error" role="alert">{matError}</p>}
             </div>
           </div>
         )}
