@@ -122,10 +122,10 @@ export const promo1111: Pkg[] = [
   },
 ];
 
-// Grand Opening Week: on sale 18-22 November 2026 (Jakarta time) only, for everyone
-export const grandOpeningWindow = "18 to 22 November 2026";
+// Grand Opening Week: on sale 18 to 30 November 2026 (Jakarta time) only, for everyone
+export const grandOpeningWindow = "18 to 30 November 2026";
 export const GRAND_OPENING_STARTS_AT = "2026-11-18T00:00:00+07:00";
-export const GRAND_OPENING_ENDS_AT = "2026-11-22T23:59:59+07:00";
+export const GRAND_OPENING_ENDS_AT = "2026-11-30T23:59:59+07:00";
 export const grandOpeningOpen = () => {
   const now = Date.now();
   return now >= new Date(GRAND_OPENING_STARTS_AT).getTime() && now <= new Date(GRAND_OPENING_ENDS_AT).getTime();

@@ -31,7 +31,7 @@ export default function PackagesPage() {
 
         {grandOpeningOpen() && (
         <div className="deal">
-          <div className="eyebrow">Opening week · {grandOpeningWindow}</div>
+          <div className="eyebrow">Grand Opening · {grandOpeningWindow}</div>
           <h2 className="h2 deal-title">Grand Opening Week</h2>
           <p className="muted deal-text">
             Welcome to Plot Twist. Special prices on 3, 5 and 10 classes, open to everyone. Promo codes and referral discounts do not apply to these packs.

@@ -101,7 +101,7 @@ export default async function HomePage() {
       <section className="band band-blush">
         <div className="container">
           <div className="center section-head-center">
-            <div className="eyebrow">Opening week · {grandOpeningWindow}</div>
+            <div className="eyebrow">Grand Opening · {grandOpeningWindow}</div>
             <h2 className="h2">Grand Opening Week</h2>
             <p className="muted deal-text deal-text-center">Welcome to Plot Twist. Special prices on 3, 5 and 10 classes, open to everyone.</p>
           </div>
