@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { getConfig, saveConfig, validateConfig } from "@/lib/config";
 import { findClass } from "@/lib/booking-shared";
 import { formatFullDay, parseISO } from "@/lib/dates";
+import { freezePastClasses } from "@/lib/coachFees";
 
 export async function GET(req: Request) {
   if (!(await requireAdmin(req))) return forbidden();
@@ -38,6 +39,9 @@ export async function PUT(req: Request) {
       conflicts,
     }, { status: 409 });
   }
+
+  // keep the classes that already ran exactly as they were, so coach fees do not change with the new timetable
+  await freezePastClasses(old, admin.email ?? null);
 
   const { error } = await saveConfig(v.config, admin.email ?? null);
   if (error) {

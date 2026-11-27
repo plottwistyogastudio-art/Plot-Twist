@@ -2,7 +2,7 @@
 // Fee rules, manual headcounts and manual fees live in site_config (key "coach_fees"); attendance comes from bookings.
 import { supabaseAdmin } from "@/lib/supabase";
 import { getConfig } from "@/lib/config";
-import { OPENING_DATE } from "@/data/schedule";
+import { OPENING_DATE, type SiteConfig } from "@/data/schedule";
 import { packages } from "@/data/packages";
 import { WEEKDAYS } from "@/lib/dates";
 
@@ -88,6 +88,54 @@ export async function saveFeeSettings(s: FeeSettings, email: string | null) {
     .upsert({ key: "coach_fees", value: clean(s), updated_at: new Date().toISOString(), updated_by: email });
 }
 
+// ---- Classes as they actually ran ----
+// Once a class has started we remember its time, name, type and weekly teacher. Changing the weekly
+// timetable afterwards then never rewrites the fees of classes that already ran. (A cover teacher
+// is still read live from the schedule, so you can fix a cover afterwards.)
+export type ClassSnap = { teacherId: string; name: string; type: string; time: string };
+
+async function getSnaps(): Promise<Record<string, ClassSnap>> {
+  try {
+    const { data } = await supabaseAdmin().from("site_config").select("value").eq("key", "coach_fee_classes").maybeSingle();
+    const raw = (data?.value as { items?: Record<string, Partial<ClassSnap>> } | null)?.items ?? {};
+    const out: Record<string, ClassSnap> = {};
+    for (const [k, v] of Object.entries(raw).slice(0, 6000)) {
+      if (KEY.test(k) && v) out[k] = { teacherId: String(v.teacherId ?? "").slice(0, 40), name: String(v.name ?? "").slice(0, 60), type: String(v.type ?? "").slice(0, 30), time: String(v.time ?? k.slice(11)) };
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+// Remember every class that has already started and is not remembered yet, using the given schedule.
+// Call it with the OLD schedule right before the schedule is changed.
+export async function freezePastClasses(cfg: SiteConfig, email: string | null = null): Promise<Record<string, ClassSnap>> {
+  const snaps = await getSnaps();
+  const now = Date.now();
+  const today = new Date(now + 7 * 3600_000).toISOString().slice(0, 10);
+  let changed = false;
+  for (let t = Date.parse(`${OPENING_DATE}T00:00:00Z`); ; t += 86400_000) {
+    const iso = new Date(t).toISOString().slice(0, 10);
+    if (iso > today) break;
+    if (cfg.closedDates.includes(iso)) continue;
+    const dow = new Date(t).getUTCDay();
+    for (const s of [...(cfg.week[dow] ?? []), ...(cfg.extraClasses[iso] ?? [])]) {
+      const key = `${iso}_${s.time}`;
+      if (key in snaps || (cfg.cancelledClasses ?? []).includes(key)) continue;
+      if (Date.parse(`${iso}T${s.time}:00+07:00`) > now) continue;
+      snaps[key] = { teacherId: s.teacherId, name: s.name, type: s.type, time: s.time };
+      changed = true;
+    }
+  }
+  if (changed) {
+    try {
+      await supabaseAdmin().from("site_config").upsert({ key: "coach_fee_classes", value: { items: snaps }, updated_at: new Date().toISOString(), updated_by: email });
+    } catch { /* the report still works from the live schedule */ }
+  }
+  return snaps;
+}
+
 export type FeeClass = {
   key: string; date: string; weekday: string; time: string; name: string; type: string;
   booked: number;     // spots booked in the app
@@ -139,6 +187,7 @@ export function feeFor(rate: Rate, people: number, dropIn: number) {
 
 export async function buildReport(ym: string, basis: Basis): Promise<FeeReport> {
   const [cfg, settings, rows] = await Promise.all([getConfig(), getFeeSettings(), monthBookings(ym)]);
+  const snaps = await freezePastClasses(cfg);
 
   const booked = new Map<string, number>();
   const attended = new Map<string, number>();
@@ -153,13 +202,25 @@ export async function buildReport(ym: string, basis: Basis): Promise<FeeReport> 
   const byTeacher = new Map<string, FeeClass[]>();
   let cancelled = 0, upcoming = 0, noCheckins = 0;
 
+  // the month's classes: from the current schedule, but a class that already ran stays as it was remembered
+  type Entry = { iso: string; time: string; name: string; type: string; teacherId: string };
+  const entries = new Map<string, Entry>();
   for (let d = 1; d <= days; d++) {
     const iso = `${ym}-${String(d).padStart(2, "0")}`;
     if (iso < OPENING_DATE || cfg.closedDates.includes(iso)) continue;
     const dow = new Date(`${iso}T00:00:00Z`).getUTCDay();
-    const slots = [...(cfg.week[dow] ?? []), ...(cfg.extraClasses[iso] ?? [])];
-    for (const s of slots) {
-      const key = `${iso}_${s.time}`;
+    for (const s of [...(cfg.week[dow] ?? []), ...(cfg.extraClasses[iso] ?? [])]) {
+      entries.set(`${iso}_${s.time}`, { iso, time: s.time, name: s.name, type: s.type, teacherId: s.teacherId });
+    }
+  }
+  for (const [key, s] of Object.entries(snaps)) {
+    if (key.startsWith(`${ym}-`)) entries.set(key, { iso: key.slice(0, 10), time: s.time, name: s.name, type: s.type, teacherId: s.teacherId });
+  }
+
+  for (const [key, s] of [...entries].sort((a, b) => a[0].localeCompare(b[0]))) {
+    {
+      const iso = s.iso;
+      const dow = new Date(`${iso}T00:00:00Z`).getUTCDay();
       if ((cfg.cancelledClasses ?? []).includes(key)) { cancelled++; continue; }
       if (Date.parse(`${iso}T${s.time}:00+07:00`) > now) { upcoming++; continue; }
       const sub = cfg.substitutes[key];
@@ -192,6 +253,11 @@ export async function buildReport(ym: string, basis: Basis): Promise<FeeReport> 
   const orphan = byTeacher.get("");
   if (orphan?.length) {
     coaches.push({ id: "", name: "No teacher assigned", rate: NO_RATE, classes: orphan.sort((a, b) => a.key.localeCompare(b.key)), totals: sum(orphan) });
+  }
+  // classes taught by a coach who was removed from the teacher list since
+  for (const [id, list] of byTeacher) {
+    if (!id || cfg.teachers.some((t) => t.id === id)) continue;
+    coaches.push({ id, name: "Removed coach", rate: settings.rates[id] ?? NO_RATE, classes: list.sort((a, b) => a.key.localeCompare(b.key)), totals: sum(list) });
   }
   coaches.sort((a, b) => b.totals.classes - a.totals.classes || a.name.localeCompare(b.name));
 
