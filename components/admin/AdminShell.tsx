@@ -10,6 +10,7 @@ const items = [
   { href: "/admin/schedule", label: "Schedule" },
   { href: "/admin/members", label: "Members" },
   { href: "/admin/orders", label: "Orders" },
+  { href: "/admin/finance", label: "Finance" },
   { href: "/admin/fees", label: "Coach fees" },
   { href: "/admin/promos", label: "Promo codes" },
 ];

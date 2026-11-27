@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin, forbidden } from "@/lib/admin";
 import { supabaseAdmin } from "@/lib/supabase";
 import { getClasses, CLASS_CAPACITY, OPENING_DATE } from "@/data/schedule";
-import { parseISO, startOfWeek, toISO, addDays } from "@/lib/dates";
+import { parseISO } from "@/lib/dates";
 import { classKey } from "@/lib/booking";
 import { getConfig } from "@/lib/config";
 import { closeStaleOrders } from "@/lib/orders";
@@ -25,12 +25,6 @@ export async function GET(req: Request) {
     return { key, ...c, cancelled: !!c.cancelled, booked: mine.filter((r) => r.status === "booked").length, studioMats: mine.filter((r) => r.status === "booked" && r.mat === "studio").length, matUnknown: mine.filter((r) => r.status === "booked" && !r.mat).length, waitlist: mine.filter((r) => r.status === "waitlist").length, capacity: CLASS_CAPACITY };
   });
 
-  // Sales this week (Mon-Sun, Jakarta dates)
-  const weekStart = toISO(startOfWeek(parseISO(date)));
-  const weekEnd = toISO(addDays(parseISO(weekStart), 7));
-  const { data: paid } = await db.from("orders").select("amount")
-    .eq("status", "paid").gte("paid_at", `${weekStart}T00:00:00+07:00`).lt("paid_at", `${weekEnd}T00:00:00+07:00`);
-
   const now = Date.now();
   const { count: pending } = await db.from("orders").select("id", { count: "exact", head: true })
     .eq("status", "pending").lt("created_at", new Date(now - 30 * 60_000).toISOString());
@@ -44,8 +38,6 @@ export async function GET(req: Request) {
       booked: classes.reduce((n, c) => n + c.booked, 0),
       mats: classes.length * CLASS_CAPACITY,
       waitlist: classes.reduce((n, c) => n + c.waitlist, 0),
-      salesWeek: (paid ?? []).reduce((n, o) => n + o.amount, 0),
-      ordersWeek: paid?.length ?? 0,
     },
     attention: { pendingOrders: pending ?? 0, expiringMembers: new Set((expiring ?? []).map((e) => e.user_id)).size },
   });

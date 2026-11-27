@@ -4,10 +4,9 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { authFetch } from "@/lib/supabase";
 import { addDays, formatFullDay, parseISO, toISO, today } from "@/lib/dates";
-import { formatIDR } from "@/data/packages";
 
 type Cls = { studioMats?: number; matUnknown?: number; cancelled?: boolean; key: string; time: string; name: string; teacher: string; booked: number; waitlist: number; capacity: number };
-type Data = { classes: Cls[]; stats: { classes: number; booked: number; mats: number; waitlist: number; salesWeek: number; ordersWeek: number }; attention: { pendingOrders: number; expiringMembers: number } };
+type Data = { classes: Cls[]; stats: { classes: number; booked: number; mats: number; waitlist: number }; attention: { pendingOrders: number; expiringMembers: number } };
 
 export default function TodayView() {
   const [date, setDate] = useState(toISO(today()));
@@ -39,7 +38,6 @@ export default function TodayView() {
             <Stat label="Classes" value={String(data.stats.classes)} />
             <Stat label="Booked" value={String(data.stats.booked)} sub={`of ${data.stats.mats} mats`} />
             <Stat label="Waitlist" value={String(data.stats.waitlist)} />
-            <Stat label="Sold this week" value={formatIDR(data.stats.salesWeek)} sub={`${data.stats.ordersWeek} orders`} />
           </div>
           <div className="admin-cols">
             <div className="admin-panel grow">

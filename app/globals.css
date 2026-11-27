@@ -748,3 +748,18 @@ select.admin-input { padding-right: 8px; }
 .check-row input { margin-top: 3px; }
 
 .pill-free { background: var(--ink, #1f2a24); color: #fff; font-size: 11px; padding: 2px 8px; margin-left: 6px; vertical-align: middle; }
+
+/* ---- Admin finance ---- */
+.admin-stats .fin-v { font-size: 24px; }
+.fin-scroll { overflow-x: auto; }
+.fin-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.fin-table th, .fin-table td { text-align: right; padding: 9px 10px; border-top: 1px solid var(--line); white-space: nowrap; }
+.fin-table th:first-child, .fin-table td:first-child { text-align: left; }
+.fin-table thead th { border-top: 0; color: var(--muted, #6b6b6b); font-weight: 500; font-size: 13px; }
+.fin-table tfoot th { border-top: 2px solid var(--line-strong); }
+.fin-table tr.is-on td { background: var(--sand); }
+.fin-neg { color: #b3261e; }
+.fin-form { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 12px; }
+.fin-form label { display: flex; flex-direction: column; gap: 4px; }
+.fin-form .fin-note { flex: 1; min-width: 160px; }
+.fin-line { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 15px; }
