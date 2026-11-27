@@ -12,6 +12,7 @@ const items = [
   { href: "/admin/orders", label: "Orders" },
   { href: "/admin/finance", label: "Finance" },
   { href: "/admin/fees", label: "Coach fees" },
+  { href: "/admin/coaches", label: "Coach themes" },
   { href: "/admin/promos", label: "Promo codes" },
 ];
 
