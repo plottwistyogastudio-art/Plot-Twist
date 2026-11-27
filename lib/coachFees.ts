@@ -18,6 +18,7 @@ export type FeeSettings = {
   rates: Record<string, Rate>;       // teacher id -> how this coach is paid
   headcounts: Record<string, number>; // "YYYY-MM-DD_HH:MM" -> number of people (when the app's count is wrong, e.g. manual bookings)
   overrides: Record<string, number>;  // "YYYY-MM-DD_HH:MM" -> fee for that one class (replaces the rule)
+  coachFix: Record<string, string>;   // "YYYY-MM-DD_HH:MM" -> coach who really taught that class (fixes the schedule, for fees only)
 };
 export type Basis = "checked" | "booked";
 
@@ -70,7 +71,11 @@ function clean(raw: unknown): FeeSettings {
     const n = count(v);
     if (KEY.test(key) && n !== null) headcounts[key] = n;
   }
-  return { dropIn: money(r.dropIn) || DEFAULT_DROP_IN, rates, headcounts, overrides };
+  const coachFix: Record<string, string> = {};
+  for (const [key, v] of Object.entries(r.coachFix ?? {}).slice(0, 3000)) {
+    if (KEY.test(key) && typeof v === "string" && v && v.length <= 40) coachFix[key] = v;
+  }
+  return { dropIn: money(r.dropIn) || DEFAULT_DROP_IN, rates, headcounts, overrides, coachFix };
 }
 
 export async function getFeeSettings(): Promise<FeeSettings> {
@@ -136,13 +141,23 @@ export async function freezePastClasses(cfg: SiteConfig, email: string | null = 
   return snaps;
 }
 
+// Forget the remembered classes of one month and remember them again from the schedule as it is now
+export async function refreshMonthFromSchedule(ym: string, email: string | null) {
+  const db = supabaseAdmin();
+  const { data } = await db.from("site_config").select("value").eq("key", "coach_fee_classes").maybeSingle();
+  const items = ((data?.value as { items?: Record<string, ClassSnap> } | null)?.items ?? {}) as Record<string, ClassSnap>;
+  for (const k of Object.keys(items)) if (k.startsWith(`${ym}-`)) delete items[k];
+  await db.from("site_config").upsert({ key: "coach_fee_classes", value: { items }, updated_at: new Date().toISOString(), updated_by: email });
+  await freezePastClasses(await getConfig(), email);
+}
+
 export type FeeClass = {
   key: string; date: string; weekday: string; time: string; name: string; type: string;
   booked: number;     // spots booked in the app
   attended: number;   // people ticked off in the roster
   people: number;     // the number the fee is based on
   peopleEdited: boolean;
-  fee: number; manual: boolean; substitute: boolean;
+  fee: number; manual: boolean; substitute: boolean; coachFixed: boolean;
 };
 export type CoachFees = {
   id: string; name: string; rate: Rate;
@@ -223,7 +238,8 @@ export async function buildReport(ym: string, basis: Basis): Promise<FeeReport> 
       const dow = new Date(`${iso}T00:00:00Z`).getUTCDay();
       if ((cfg.cancelledClasses ?? []).includes(key)) { cancelled++; continue; }
       if (Date.parse(`${iso}T${s.time}:00+07:00`) > now) { upcoming++; continue; }
-      const sub = cfg.substitutes[key];
+      const fix = settings.coachFix[key];
+      const sub = fix || cfg.substitutes[key];
       const teacherId = sub || s.teacherId || "";
       const b = booked.get(key) ?? 0;
       const a = attended.get(key) ?? 0;
@@ -234,7 +250,7 @@ export async function buildReport(ym: string, basis: Basis): Promise<FeeReport> 
       const manual = key in settings.overrides;
       const fee = manual ? settings.overrides[key] : feeFor(rate, people, settings.dropIn);
       const list = byTeacher.get(teacherId) ?? [];
-      list.push({ key, date: iso, weekday: WEEKDAYS[dow], time: s.time, name: s.name, type: s.type, booked: b, attended: a, people, peopleEdited: edited, fee, manual, substitute: !!sub && sub !== s.teacherId });
+      list.push({ key, date: iso, weekday: WEEKDAYS[dow], time: s.time, name: s.name, type: s.type, booked: b, attended: a, people, peopleEdited: edited, fee, manual, substitute: !!sub && sub !== s.teacherId, coachFixed: !!fix });
       byTeacher.set(teacherId, list);
     }
   }

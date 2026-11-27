@@ -771,3 +771,5 @@ select.admin-input { padding-right: 8px; }
 .coach-when { display: grid; gap: 4px; justify-items: start; }
 .coach-save { display: grid; gap: 4px; justify-items: start; }
 @media (max-width: 760px) { .coach-row { grid-template-columns: 1fr; align-items: start; } }
+
+.fee-coach-pick { height: 36px; font-size: 14px; max-width: 170px; }

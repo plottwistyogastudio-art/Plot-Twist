@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin, forbidden } from "@/lib/admin";
 import { getConfig } from "@/lib/config";
-import { MONTH_RE, buildReport, cleanRate, count, getFeeSettings, money, percentage, saveFeeSettings, type Basis } from "@/lib/coachFees";
+import { MONTH_RE, buildReport, cleanRate, count, getFeeSettings, money, percentage, refreshMonthFromSchedule, saveFeeSettings, type Basis } from "@/lib/coachFees";
 
 const jakartaMonth = () => new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 7);
 const KEY = /^\d{4}-\d{2}-\d{2}_([01]\d|2[0-3]):[0-5]\d$/;
@@ -20,6 +20,8 @@ export async function GET(req: Request) {
 // { action: "dropin", amount }
 // { action: "people", key, count | null }      number of people for one class (null = use the app's count)
 // { action: "override", key, amount | null }   fee for one class (null = use the coach's rate)
+// { action: "coach", key, teacherId | null }   who really taught one class (null = follow the schedule)
+// { action: "refresh", month }                  remember this month's classes again from the schedule as it is now
 export async function POST(req: Request) {
   const admin = await requireAdmin(req);
   if (!admin) return forbidden();
@@ -62,6 +64,21 @@ export async function POST(req: Request) {
       if (amount === null) return bad("Enter the fee as a whole number in IDR.");
       settings.overrides[key] = amount;
     }
+  } else if (body?.action === "coach") {
+    const key = String(body.key ?? "");
+    if (!KEY.test(key)) return bad("Bad class.");
+    if (body.teacherId === null || body.teacherId === "") {
+      delete settings.coachFix[key];
+    } else {
+      const id = String(body.teacherId);
+      if (!(await getConfig()).teachers.some((t) => t.id === id)) return bad("Unknown coach.");
+      settings.coachFix[key] = id;
+    }
+  } else if (body?.action === "refresh") {
+    const month = String(body.month ?? "");
+    if (!MONTH_RE.test(month)) return bad("Bad month.");
+    await refreshMonthFromSchedule(month, admin.email ?? null);
+    return NextResponse.json({ ok: true });
   } else {
     return bad("Unknown action.");
   }

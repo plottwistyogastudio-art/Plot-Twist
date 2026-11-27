@@ -9,7 +9,7 @@ type Rate = { mode: "flat" | "percent"; base: number; perHead: number; threshold
 type FeeClass = {
   key: string; date: string; weekday: string; time: string; name: string; type: string;
   booked: number; attended: number; people: number; peopleEdited: boolean;
-  fee: number; manual: boolean; substitute: boolean;
+  fee: number; manual: boolean; substitute: boolean; coachFixed: boolean;
 };
 type Coach = {
   id: string; name: string; rate: Rate;
@@ -141,6 +141,9 @@ export default function CoachFeesView() {
           <b className="fee-month">{label(month)}</b>
           <button className="btn btn-outline btn-sm" disabled={month >= jakartaMonth()} onClick={() => setMonth(shift(month, 1))} aria-label="Next month">→</button>
           <button className="btn btn-outline btn-sm" onClick={downloadCsv} disabled={!data}>Download all coaches</button>
+          <button className="btn btn-outline btn-sm" disabled={!data} onClick={() => {
+            if (window.confirm(`Re-read ${label(month)} from the timetable as it is now? Classes that already ran are taken from the current weekly timetable again. Fixes you made with “Change coach”, “Edit people” and “Edit fee” stay.`)) post({ action: "refresh", month }, "Classes refreshed from the timetable.");
+          }}>Refresh from timetable</button>
         </div>
       </div>
 
@@ -247,7 +250,7 @@ export default function CoachFeesView() {
                     <div className="fee-date"><b>{shortDate(k.date)}</b><div className="muted small">{k.weekday}</div></div>
                     <div className="admin-time">{k.time}</div>
                     <div className="grow">{k.name}
-                      <div className="muted small">{k.type}{k.substitute ? " · cover" : ""}</div>
+                      <div className="muted small">{k.type}{k.coachFixed ? " · coach changed here" : k.substitute ? " · cover" : ""}</div>
                     </div>
                     <div className="fee-num">
                       <b>{k.people}</b> {k.people === 1 ? "person" : "people"}
@@ -260,6 +263,12 @@ export default function CoachFeesView() {
                     <div className="fee-btns">
                       <button className="btn btn-outline btn-sm" onClick={() => editPeople(k)}>Edit people</button>
                       <button className="btn btn-outline btn-sm" onClick={() => editFee(k)}>Edit fee</button>
+                      <select className="admin-input fee-coach-pick" value="" aria-label="Move this class to another coach"
+                        onChange={(e) => { const v = e.target.value; if (v) post({ action: "coach", key: k.key, teacherId: v === "__reset" ? null : v }, v === "__reset" ? "Back to the schedule." : "Coach changed for this class."); }}>
+                        <option value="">Change coach…</option>
+                        {data.coaches.filter((x) => x.id && x.id !== c.id).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                        {k.coachFixed && <option value="__reset">↺ Back to the schedule</option>}
+                      </select>
                     </div>
                   </div>
                 ))}
