@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import CtaBand from "@/components/CtaBand";
+import HomeSlider from "@/components/HomeSlider";
 import PackageCard from "@/components/PackageCard";
 import TeacherCard from "@/components/TeacherCard";
 import { classTypes } from "@/data/classTypes";
@@ -34,8 +35,9 @@ export default async function HomePage() {
   }
   return (
     <>
-      <section className="container hero">
-        <div className="hero-copy">
+      <section className="home-hero">
+        <HomeSlider />
+        <div className="home-hero-copy">
           <h1 className="h1">
             Come for the stretch.
             <br />
@@ -43,12 +45,9 @@ export default async function HomePage() {
           </h1>
           <p className="lead">{site.description}</p>
           <div className="btn-row">
-            <a href="/schedule" className="btn btn-primary">Book a class</a>
-            <Link href="/schedule" className="btn btn-outline">View schedule</Link>
+            <a href="/schedule" className="btn btn-light">Book a class</a>
+            <Link href="/schedule" className="btn btn-ghost">View schedule</Link>
           </div>
-        </div>
-        <div className="hero-art">
-          <Image src="/brand/twisty.png" alt="Twisty, the Plot Twist cat, stretching in downward dog" width={577} height={623} priority />
         </div>
       </section>
 
@@ -180,6 +179,11 @@ export default async function HomePage() {
       </section>
 
       <CtaBand />
+
+      <div className="twisty-foot">
+        <Image src="/brand/twisty.png" alt="Twisty, the Plot Twist cat, stretching in downward dog" width={577} height={623} />
+        <p>See you on the mat. &mdash; Twisty</p>
+      </div>
     </>
   );
 }
